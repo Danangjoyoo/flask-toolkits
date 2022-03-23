@@ -1,4 +1,5 @@
 from collections import defaultdict
+import enum
 import json
 import os, inspect
 import typing as t
@@ -8,6 +9,7 @@ from pydantic import BaseModel, create_model
 import pydantic
 
 from .exceptions import SwaggerPathError
+from .dependencies import Depends
 from .params import (
     _ParamsClass,
     ParamsType,
@@ -31,7 +33,7 @@ class BaseSchema(BaseModel):
             if k not in kwargs:
                 empty_keys.append(k)
         return empty_keys
-    
+
     @classmethod
     def dict2pydantic(cls, datas: dict) -> dict:
         newDatas = {}
@@ -58,8 +60,10 @@ class EndpointDefinition():
     :param responses: endpoint's swagger responses
     :param auto_swagger: set this `True` will generate the endpoint swagger automatically using `AutoSwagger`
     :param custom_swagger: put your custom swagger definition
-        this variable will replace the `AutoSwagger` definition only
-        for this endpoint
+        - this variable will replace the `AutoSwagger` definition only
+        for this endpoint.
+        - this will also removing swagger `tags` so you have to define the tags
+        in it
         - example format :
             {
                 "tags":[],
@@ -202,14 +206,7 @@ class APIRouter(Blueprint):
         self.defined_endpoints = []
         self._is_registered = False
         self._enable_auto_swagger = auto_swagger
-        if tags:
-            self.tags = tags
-        else:
-            ss = ""
-            name = name.replace("_","-")
-            for s in name.split("-"):
-                ss += s[0].upper()+s[1:].lower()+" "
-            self.tags = [ss[:-1]]
+        self.tags = tags or [name]
 
     def register(self, app: Flask, options: dict) -> None:
         name_prefix = options.get("name_prefix", "")
@@ -439,6 +436,7 @@ class APIRouter(Blueprint):
                 def modified_func(**paths):
                     try:
                         valid_kwargs = self.get_kwargs(paths, request, paired_params, pydantic_model)
+                        valid_kwargs = self.fill_all_enum_value(valid_kwargs)
                         return func(**valid_kwargs)
                     except pydantic.ValidationError as e:
                         return Response(
@@ -473,6 +471,19 @@ class APIRouter(Blueprint):
 
         return decorator
 
+    def fill_all_enum_value(self, o):
+        try:
+            datas = {}
+            if type(o) == dict:
+                for k in o:
+                    datas[k] = self.fill_all_enum_value(o[k])
+                return datas
+            if enum.Enum.__subclasscheck__(o.__class__):
+                return o.value
+        except:
+            return o
+        return o
+
     def extract_signature_params(self, func: t.Callable):
         """Extract the signature of a function as parameters"""
         annots = func.__annotations__
@@ -491,12 +502,19 @@ class APIRouter(Blueprint):
         params_signature = inspect.signature(func).parameters
         annots = func.__annotations__
         pair = {}
-        bodies = {}
         for k, p in params_signature.items():
             ## get default value
             if p.default != inspect._empty:
                 if type(p.default) not in _ParamsClass:
-                    default_value = Query(p.default)
+                    if type(p.default) == Depends:
+                        if not p.default.obj:
+                            if k in annots:
+                                p.default.obj = annots[k]
+                        if p.default.obj:
+                            pair.update(self._get_func_signature(path, p.default.obj))
+                        continue
+                    else:
+                        default_value = Query(p.default)
                 else:
                     default_value = p.default
             else:
@@ -536,13 +554,27 @@ class APIRouter(Blueprint):
         header_kwargs = {k: request.headers.get(k) for k in variables if request.headers.get(k)}
         kwargs = {**query_kwargs, **header_kwargs, **paths}
         empty_keys = pydantic_model.get_non_exist_var_in_kwargs(**kwargs)
-        for k in empty_keys:
-            po = paired_params[k].param_object
+        total_body = self.count_required_body(paired_params)
+        if total_body:
+            for k in empty_keys:
+                if k in paired_params:
+                    po = paired_params[k].param_object
+                    if type(po) == Body:
+                        if BaseModel.__subclasscheck__(po.dtype):
+                            if total_body == 1:
+                                kwargs[k] = po.dtype(**request.json)
+                            else:
+                                kwargs[k] = po.dtype(**request.json[k])
+        valid_kwargs = pydantic_model(**kwargs)
+        return vars(valid_kwargs)
+
+    def count_required_body(self, paired_params: t.Dict[str, t.Any]) -> int:
+        total = 0
+        for pp in paired_params.values():
+            po = pp.param_object
             if type(po) == Body:
-                if BaseModel.__subclasscheck__(po.dtype):
-                    kwargs[k] = po.dtype(**request.json[k])
-        valid_kwargs = pydantic_model(**kwargs).dict()
-        return valid_kwargs
+                total += 1
+        return total
 
     def check_params_in_path(self, key: str, path: str):
         len_path = len(path)

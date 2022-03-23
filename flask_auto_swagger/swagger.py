@@ -94,7 +94,7 @@ class SwaggerGenerator(Blueprint):
                             "parameters": self.generate_parameter_schema(ep.paired_params),
                             "responses": ep.responses
                         }
-                        body_schema = self.generate_request_body(ep.rule.replace("/","-"), ep.paired_params)
+                        body_schema = self.generate_request_body_schema(ep.rule.replace("/","-"), ep.paired_params)
                         if body_schema:
                             if "definitions" in body_schema:
                                 definitions = body_schema.pop("definitions")
@@ -137,15 +137,18 @@ class SwaggerGenerator(Blueprint):
                 schemas.append(schema)
         return schemas
     
-    def generate_request_body(self, name, paired_params):
-        schema = {}
+    def generate_request_body_schema(self, name, paired_params):
+        preschema = {}
         for k, p in paired_params.items():
             po = p.param_object
             if type(po) == Body:
-                schema[k] = (po.pydantic_model, ...)
-        if schema:
-                ss = create_model(name, **schema)
-                return ss.schema(ref_template="#/components/schemas/{model}")
+                preschema[k] = (po.pydantic_model, ...)
+        if preschema:
+            if len(preschema) == 1:
+                ss = preschema[k][0]
+            else:
+                ss = create_model(name, **preschema)
+            return ss.schema(ref_template="#/components/schemas/{model}")
     
     def get_schema_dtype(self, dtype):
         schema_data_type = {
