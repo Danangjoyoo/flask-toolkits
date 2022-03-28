@@ -1,0 +1,41 @@
+Metadata-Version: 2.1
+Name: flask-toolkits
+Version: 0.0.1
+Summary: Flask toolkits to boost your development and simplify flask, its featured with AutoSwagger
+Home-page: UNKNOWN
+Author: danangjoyoo (Agus Danangjoyo)
+Author-email: <agus.danangjoyo.blog@gmail.com>
+License: UNKNOWN
+Description: # Flask HTTP Middleware
+        <!-- [![Downloads](https://static.pepy.tech/personalized-badge/flask-http-middleware?period=month&units=international_system&left_color=black&right_color=green&left_text=Downloads)](https://pepy.tech/project/flask-http-middleware) -->
+        
+        ## Repository
+        - [ ] [GITHUB](https://github.com/Danangjoyoo/flask-toolkits)
+        
+        ## Installation
+        ```
+        pip install flask-toolkits
+        ```
+        
+        ## Description
+        Flask toolkits implements and provides several features from FastAPI like:
+        - automatic API documentation using swagger (define the function and we'll generate the openapi spec for you)
+        - Base HTTP Middleware (middleware with direct access to `request` and `response`)
+        - pydantic's validator
+        - Response functions that could return any type of data without worried to get error
+        - much more..
+        
+        
+        ## Changelogs
+        - v0.0
+            - First Upload
+Keywords: flask,middleware,http,request,response,autoswagger,openapi,toolkit
+Platform: UNKNOWN
+Classifier: Development Status :: 3 - Alpha
+Classifier: Intended Audience :: Developers
+Classifier: Programming Language :: Python :: 3 :: Only
+Classifier: Programming Language :: Python :: 3.8
+Classifier: Environment :: Web Environment
+Classifier: Operating System :: OS Independent
+Classifier: Typing :: Typed
+Description-Content-Type: text/markdown
