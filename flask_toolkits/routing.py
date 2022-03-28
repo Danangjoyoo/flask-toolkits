@@ -2,7 +2,7 @@ from collections import defaultdict
 import enum
 import json
 import os, inspect
-import typing as t
+from typing import Any, Callable, Dict, Mapping, List, Tuple, Union, Optional
 from flask import Flask, Blueprint, Response, jsonify, request, Request
 from flask.scaffold import _sentinel
 from pydantic import BaseModel, create_model
@@ -21,7 +21,7 @@ from .params import (
 )
 
 class BaseSchema(BaseModel):
-    def __init__(__pydantic_self__, **data: t.Any) -> None:
+    def __init__(__pydantic_self__, **data: Any) -> None:
         data = __pydantic_self__.dict2pydantic(data)
         super().__init__(**data)
 
@@ -61,7 +61,7 @@ class EndpointDefinition():
     :param auto_swagger: set this `True` will generate the endpoint swagger automatically using `AutoSwagger`
     :param custom_swagger: put your custom swagger definition
         - this variable will replace the `AutoSwagger` definition only
-        for this endpoint.
+        for this endpoin
         - this will also removing swagger `tags` so you have to define the tags
         in it
         - example format :
@@ -79,14 +79,14 @@ class EndpointDefinition():
         self,
         rule: str,
         method: str,
-        paired_params: t.Dict[str, ParamsType],
-        tags: t.Optional[t.List[str]] = None,
-        summary: t.Optional[str] = None,
-        description: t.Optional[str] = None,
+        paired_params: Dict[str, ParamsType],
+        tags: Optional[List[str]] = None,
+        summary: Optional[str] = None,
+        description: Optional[str] = None,
         response_description: str = "Successful Response",
-        responses: t.Optional[t.Dict[t.Union[int, str], t.Dict[str, t.Any]]] = None,
+        responses: Optional[Dict[Union[int, str], Dict[str, Any]]] = None,
         auto_swagger: bool = True,
-        custom_swagger: t.Optional[t.Dict[str, t.Any]] = None,
+        custom_swagger: Optional[Dict[str, Any]] = None,
         pydantic_model: BaseModel = None
     ) -> None:
         self.rule = rule
@@ -139,15 +139,15 @@ class APIRouter(Blueprint):
 
     Use this class to make your router automatically documented by `AutoSwagger`
 
-    :param name: The name of the blueprint. Will be prepended to each
+    :param name: The name of the blueprin Will be prepended to each
         endpoint name.
     :param import_name: The name of the blueprint package, usually
         ``__name__``. This helps locate the ``root_path`` for the
-        blueprint.
+        blueprin
     :param static_folder: A folder with static files that should be
         served by the blueprint's static route. The path is relative to
         the blueprint's root path. Blueprint static files are disabled
-        by default.
+        by defaul
     :param static_url_path: The url to serve static files from.
         Defaults to ``static_folder``. If the blueprint does not have
         a ``url_prefix``, the app's static route will take precedence,
@@ -155,14 +155,14 @@ class APIRouter(Blueprint):
     :param template_folder: A folder with templates that should be added
         to the app's template search path. The path is relative to the
         blueprint's root path. Blueprint templates are disabled by
-        default. Blueprint templates have a lower precedence than those
+        defaul Blueprint templates have a lower precedence than those
         in the app's templates folder.
     :param url_prefix: A path to prepend to all of the blueprint's URLs,
         to make them distinct from the rest of the app's routes.
     :param subdomain: A subdomain that blueprint routes will match on by
-        default.
+        defaul
     :param url_defaults: A dict of default values that blueprint routes
-        will receive by default.
+        will receive by defaul
     :param root_path: By default, the blueprint will automatically set
         this based on ``import_name``. In certain situations this
         automatic detection can fail, so the path can be specified
@@ -178,15 +178,15 @@ class APIRouter(Blueprint):
         self,
         name: str,
         import_name: str,
-        static_folder: t.Optional[t.Union[str, os.PathLike]] = None,
-        static_url_path: t.Optional[str] = None,
-        template_folder: t.Optional[str] = None,
-        url_prefix: t.Optional[str] = None,
-        subdomain: t.Optional[str] = None,
-        url_defaults: t.Optional[dict] = None,
-        root_path: t.Optional[str] = None,
-        cli_group: t.Optional[str] = _sentinel,
-        tags: t.Optional[t.List[str]] = [],
+        static_folder: Optional[Union[str, os.PathLike]] = None,
+        static_url_path: Optional[str] = None,
+        template_folder: Optional[str] = None,
+        url_prefix: Optional[str] = None,
+        subdomain: Optional[str] = None,
+        url_defaults: Optional[dict] = None,
+        root_path: Optional[str] = None,
+        cli_group: Optional[str] = _sentinel,
+        tags: Optional[List[str]] = [],
         auto_swagger: bool = True
     ):
         super().__init__(
@@ -201,7 +201,7 @@ class APIRouter(Blueprint):
             root_path=root_path,
             cli_group=cli_group
         )
-        self.paired_signature: t.Dict[str, t.Dict[str, ParamsType]] = {}
+        self.paired_signature: Dict[str, Dict[str, ParamsType]] = {}
         APIRouter._api_routers[name] = self
         self.defined_endpoints = []
         self._is_registered = False
@@ -248,7 +248,7 @@ class APIRouter(Blueprint):
                 endpoint="static",
             )
 
-        # Merge blueprint data into parent.
+        # Merge blueprint data into paren
         if first_bp_registration or first_name_registration:
 
             def extend(bp_dict, parent_dict):
@@ -319,71 +319,71 @@ class APIRouter(Blueprint):
     def get(
         self,
         rule: str,
-        tags: t.Optional[t.List[str]] = [],
-        summary: t.Optional[str] = None,
-        description: t.Optional[str] = None,
+        tags: Optional[List[str]] = [],
+        summary: Optional[str] = None,
+        description: Optional[str] = None,
         response_description: str = "Successful Response",
-        responses: t.Optional[t.Dict[t.Union[int, str], t.Dict[str, t.Any]]] = None,
+        responses: Optional[Dict[Union[int, str], Dict[str, Any]]] = None,
         auto_swagger: bool = True,
-        custom_swagger: t.Optional[t.Dict[str, t.Any]] = None,
-        **options: t.Any
-    ) -> t.Callable:
+        custom_swagger: Optional[Dict[str, Any]] = None,
+        **options: Any
+    ) -> Callable:
         return self._method_route("GET", rule, options, tags, summary, description, response_description, responses, auto_swagger, custom_swagger)
 
     def post(
         self,
         rule: str,
-        tags: t.Optional[t.List[str]] = [],
-        summary: t.Optional[str] = None,
-        description: t.Optional[str] = None,
+        tags: Optional[List[str]] = [],
+        summary: Optional[str] = None,
+        description: Optional[str] = None,
         response_description: str = "Successful Response",
-        responses: t.Optional[t.Dict[t.Union[int, str], t.Dict[str, t.Any]]] = None,
+        responses: Optional[Dict[Union[int, str], Dict[str, Any]]] = None,
         auto_swagger: bool = True,
-        custom_swagger: t.Optional[t.Dict[str, t.Any]] = None,
-        **options: t.Any
-    ) -> t.Callable:
+        custom_swagger: Optional[Dict[str, Any]] = None,
+        **options: Any
+    ) -> Callable:
         return self._method_route("POST", rule, options, tags, summary, description, response_description, responses, auto_swagger, custom_swagger)
     
     def put(
         self,
         rule: str,
-        tags: t.Optional[t.List[str]] = [],
-        summary: t.Optional[str] = None,
-        description: t.Optional[str] = None,
+        tags: Optional[List[str]] = [],
+        summary: Optional[str] = None,
+        description: Optional[str] = None,
         response_description: str = "Successful Response",
-        responses: t.Optional[t.Dict[t.Union[int, str], t.Dict[str, t.Any]]] = None,
+        responses: Optional[Dict[Union[int, str], Dict[str, Any]]] = None,
         auto_swagger: bool = True,
-        custom_swagger: t.Optional[t.Dict[str, t.Any]] = None,
-        **options: t.Any
-    ) -> t.Callable:
+        custom_swagger: Optional[Dict[str, Any]] = None,
+        **options: Any
+    ) -> Callable:
         return self._method_route("PUT", rule, options, tags, summary, description, response_description, responses, auto_swagger, custom_swagger)
 
     def delete(
         self,
         rule: str,
-        tags: t.Optional[t.List[str]] = [],
-        summary: t.Optional[str] = None,
-        description: t.Optional[str] = None,
+        tags: Optional[List[str]] = [],
+        summary: Optional[str] = None,
+        description: Optional[str] = None,
         response_description: str = "Successful Response",
-        responses: t.Optional[t.Dict[t.Union[int, str], t.Dict[str, t.Any]]] = None,
+        responses: Optional[Dict[Union[int, str], Dict[str, Any]]] = None,
         auto_swagger: bool = True,
-        custom_swagger: t.Optional[t.Dict[str, t.Any]] = None,
-        **options: t.Any
-    ) -> t.Callable:
+        custom_swagger: Optional[Dict[str, Any]] = None,
+        **options: Any
+    ) -> Callable:
         return self._method_route("DELETE", rule, options, tags, summary, description, response_description, responses, auto_swagger, custom_swagger)
     
     def patch(
         self,
         rule: str,
-        tags: t.Optional[t.List[str]] = [],
-        summary: t.Optional[str] = None,
-        description: t.Optional[str] = None,
+        tags: Optional[List[str]] = [],
+        summary: Optional[str] = None,
+        description: Optional[str] = None,
         response_description: str = "Successful Response",
-        responses: t.Optional[t.Dict[t.Union[int, str], t.Dict[str, t.Any]]] = None,
+        responses: Optional[Dict[Union[int, str], Dict[str, Any]]] = None,
         auto_swagger: bool = True,
-        custom_swagger: t.Optional[t.Dict[str, t.Any]] = None,
-        **options: t.Any
-    ) -> t.Callable:
+        custom_swagger: Optional[Dict[str, Any]] = None,
+        **options: Any
+    ) -> Callable:
         return self._method_route("PATCH", rule, options, tags, summary, description, response_description, responses, auto_swagger, custom_swagger)
     
     def _method_route(
@@ -391,16 +391,16 @@ class APIRouter(Blueprint):
         method: str,
         rule: str,
         options: dict,
-        tags: t.Optional[t.List[str]] = [],
-        summary: t.Optional[str] = None,
-        description: t.Optional[str] = None,
+        tags: Optional[List[str]] = [],
+        summary: Optional[str] = None,
+        description: Optional[str] = None,
         response_description: str = "Successful Response",
-        responses: t.Optional[t.Dict[t.Union[int, str], t.Dict[str, t.Any]]] = None,
+        responses: Optional[Dict[Union[int, str], Dict[str, Any]]] = None,
         auto_swagger: bool = True,
-        custom_swagger: t.Optional[t.Dict[str, t.Any]] = None,
-    ) -> t.Callable:
+        custom_swagger: Optional[Dict[str, Any]] = None,
+    ) -> Callable:
         if "methods" in options:
-            raise TypeError("Use the 'route' decorator to use the 'methods' argument.")
+            raise TypeError("Use the 'route' decorator to use the 'methods' argumen")
         return self.route(
             rule=rule,
             methods=[method],
@@ -417,17 +417,17 @@ class APIRouter(Blueprint):
     def route(
         self,
         rule: str,
-        tags: t.Optional[t.List[str]] = [],
-        summary: t.Optional[str] = None,
-        description: t.Optional[str] = None,
+        tags: Optional[List[str]] = [],
+        summary: Optional[str] = None,
+        description: Optional[str] = None,
         response_description: str = "Successful Response",
-        responses: t.Optional[t.Dict[t.Union[int, str], t.Dict[str, t.Any]]] = None,
+        responses: Optional[Dict[Union[int, str], Dict[str, Any]]] = None,
         auto_swagger: bool = True,
-        custom_swagger: t.Optional[t.Dict[str, t.Any]] = None,
-        **options: t.Any
-    ) -> t.Callable:
+        custom_swagger: Optional[Dict[str, Any]] = None,
+        **options: Any
+    ) -> Callable:
         
-        def decorator(func: t.Callable) -> t.Callable:
+        def decorator(func: Callable) -> Callable:
             paired_params = self._get_func_signature(rule, func)
             self.paired_signature[self.url_prefix+rule] = paired_params
             pydantic_model = self.generate_endpoint_pydantic(func.__name__+"Schema", func)
@@ -484,7 +484,7 @@ class APIRouter(Blueprint):
             return o
         return o
 
-    def extract_signature_params(self, func: t.Callable):
+    def extract_signature_params(self, func: Callable):
         """Extract the signature of a function as parameters"""
         annots = func.__annotations__
         fsig = inspect.signature(func)
@@ -495,10 +495,10 @@ class APIRouter(Blueprint):
         res = {k: (annots[k] if k in annots else str, d) for k, d in default_val.items()}
         return res
     
-    def generate_endpoint_pydantic(self, name: str, func: t.Callable):
+    def generate_endpoint_pydantic(self, name: str, func: Callable):
         return create_model(name, __base__=BaseSchema, **self.extract_signature_params(func))
 
-    def _get_func_signature(self, path: str, func: t.Callable):
+    def _get_func_signature(self, path: str, func: Callable):
         params_signature = inspect.signature(func).parameters
         annots = func.__annotations__
         pair = {}
@@ -507,11 +507,11 @@ class APIRouter(Blueprint):
             if p.default != inspect._empty:
                 if type(p.default) not in _ParamsClass:
                     if type(p.default) == Depends:
-                        if not p.default.obj:
+                        if not p.defaulobj:
                             if k in annots:
-                                p.default.obj = annots[k]
-                        if p.default.obj:
-                            pair.update(self._get_func_signature(path, p.default.obj))
+                                p.defaulobj = annots[k]
+                        if p.defaulobj:
+                            pair.update(self._get_func_signature(path, p.defaulobj))
                         continue
                     else:
                         default_value = Query(p.default)
@@ -568,7 +568,7 @@ class APIRouter(Blueprint):
         valid_kwargs = pydantic_model(**kwargs)
         return vars(valid_kwargs)
 
-    def count_required_body(self, paired_params: t.Dict[str, t.Any]) -> int:
+    def count_required_body(self, paired_params: Dict[str, Any]) -> int:
         total = 0
         for pp in paired_params.values():
             po = pp.param_object

@@ -1,4 +1,4 @@
-import typing as t
+from typing import Optional, Dict, Any
 import enum
 from pydantic import BaseModel
 from pydantic.fields import Undefined
@@ -29,23 +29,23 @@ class BaseParams():
     """
     def __init__(
         self,
-        default: t.Any,
+        default: Any,
         *,
-        alias: t.Optional[str] = None,
-        title: t.Optional[str] = None,
-        description: t.Optional[str] = None,
-        gt: t.Optional[float] = None,
-        ge: t.Optional[float] = None,
-        lt: t.Optional[float] = None,
-        le: t.Optional[float] = None,
-        min_length: t.Optional[int] = None,
-        max_length: t.Optional[int] = None,
-        regex: t.Optional[str] = None,
-        example: t.Any = Undefined,
-        examples: t.Optional[t.Dict[str, t.Any]] = None,
-        deprecated: t.Optional[bool] = None,
+        alias: Optional[str] = None,
+        title: Optional[str] = None,
+        description: Optional[str] = None,
+        gt: Optional[float] = None,
+        ge: Optional[float] = None,
+        lt: Optional[float] = None,
+        le: Optional[float] = None,
+        min_length: Optional[int] = None,
+        max_length: Optional[int] = None,
+        regex: Optional[str] = None,
+        example: Any = Undefined,
+        examples: Optional[Dict[str, Any]] = None,
+        deprecated: Optional[bool] = None,
         _type: _request_param_type = ...,
-        **extra: t.Any,
+        **extra: Any,
     ) -> None:
         self.default = default
         self.alias = alias
@@ -71,22 +71,22 @@ class BaseParams():
 class Header(BaseParams):
     def __init__(
         self,
-        default: t.Any,
+        default: Any,
         *,
-        alias: t.Optional[str] = None,
-        title: t.Optional[str] = None,
-        description: t.Optional[str] = None,
-        gt: t.Optional[float] = None,
-        ge: t.Optional[float] = None,
-        lt: t.Optional[float] = None,
-        le: t.Optional[float] = None,
-        min_length: t.Optional[int] = None,
-        max_length: t.Optional[int] = None,
-        regex: t.Optional[str] = None,
-        example: t.Any = Undefined,
-        examples: t.Optional[t.Dict[str, t.Any]] = None,
-        deprecated: t.Optional[bool] = None,
-        **extra: t.Any
+        alias: Optional[str] = None,
+        title: Optional[str] = None,
+        description: Optional[str] = None,
+        gt: Optional[float] = None,
+        ge: Optional[float] = None,
+        lt: Optional[float] = None,
+        le: Optional[float] = None,
+        min_length: Optional[int] = None,
+        max_length: Optional[int] = None,
+        regex: Optional[str] = None,
+        example: Any = Undefined,
+        examples: Optional[Dict[str, Any]] = None,
+        deprecated: Optional[bool] = None,
+        **extra: Any
     ) -> None:
         super().__init__(
             default=default,
@@ -110,22 +110,22 @@ class Header(BaseParams):
 class Query(BaseParams):
     def __init__(
         self,
-        default: t.Any,
+        default: Any,
         *,
-        alias: t.Optional[str] = None,
-        title: t.Optional[str] = None,
-        description: t.Optional[str] = None,
-        gt: t.Optional[float] = None,
-        ge: t.Optional[float] = None,
-        lt: t.Optional[float] = None,
-        le: t.Optional[float] = None,
-        min_length: t.Optional[int] = None,
-        max_length: t.Optional[int] = None,
-        regex: t.Optional[str] = None,
-        example: t.Any = Undefined,
-        examples: t.Optional[t.Dict[str, t.Any]] = None,
-        deprecated: t.Optional[bool] = None,
-        **extra: t.Any
+        alias: Optional[str] = None,
+        title: Optional[str] = None,
+        description: Optional[str] = None,
+        gt: Optional[float] = None,
+        ge: Optional[float] = None,
+        lt: Optional[float] = None,
+        le: Optional[float] = None,
+        min_length: Optional[int] = None,
+        max_length: Optional[int] = None,
+        regex: Optional[str] = None,
+        example: Any = Undefined,
+        examples: Optional[Dict[str, Any]] = None,
+        deprecated: Optional[bool] = None,
+        **extra: Any
     ) -> None:
         super().__init__(
             default=default,
@@ -149,22 +149,22 @@ class Query(BaseParams):
 class Path(BaseParams):
     def __init__(
         self,
-        default: t.Any,
+        default: Any,
         *,
-        alias: t.Optional[str] = None,
-        title: t.Optional[str] = None,
-        description: t.Optional[str] = None,
-        gt: t.Optional[float] = None,
-        ge: t.Optional[float] = None,
-        lt: t.Optional[float] = None,
-        le: t.Optional[float] = None,
-        min_length: t.Optional[int] = None,
-        max_length: t.Optional[int] = None,
-        regex: t.Optional[str] = None,
-        example: t.Any = Undefined,
-        examples: t.Optional[t.Dict[str, t.Any]] = None,
-        deprecated: t.Optional[bool] = None,
-        **extra: t.Any
+        alias: Optional[str] = None,
+        title: Optional[str] = None,
+        description: Optional[str] = None,
+        gt: Optional[float] = None,
+        ge: Optional[float] = None,
+        lt: Optional[float] = None,
+        le: Optional[float] = None,
+        min_length: Optional[int] = None,
+        max_length: Optional[int] = None,
+        regex: Optional[str] = None,
+        example: Any = Undefined,
+        examples: Optional[Dict[str, Any]] = None,
+        deprecated: Optional[bool] = None,
+        **extra: Any
     ) -> None:
         super().__init__(
             default=default,
@@ -188,23 +188,23 @@ class Path(BaseParams):
 class Body(BaseParams):
     def __init__(
         self,
-        default: t.Any,
+        default: Any,
         *,
-        alias: t.Optional[str] = None,
-        title: t.Optional[str] = None,
-        description: t.Optional[str] = None,
-        gt: t.Optional[float] = None,
-        ge: t.Optional[float] = None,
-        lt: t.Optional[float] = None,
-        le: t.Optional[float] = None,
-        min_length: t.Optional[int] = None,
-        max_length: t.Optional[int] = None,
-        regex: t.Optional[str] = None,
-        example: t.Any = Undefined,
-        examples: t.Optional[t.Dict[str, t.Any]] = None,
-        deprecated: t.Optional[bool] = None,
+        alias: Optional[str] = None,
+        title: Optional[str] = None,
+        description: Optional[str] = None,
+        gt: Optional[float] = None,
+        ge: Optional[float] = None,
+        lt: Optional[float] = None,
+        le: Optional[float] = None,
+        min_length: Optional[int] = None,
+        max_length: Optional[int] = None,
+        regex: Optional[str] = None,
+        example: Any = Undefined,
+        examples: Optional[Dict[str, Any]] = None,
+        deprecated: Optional[bool] = None,
         pydantic_model: BaseModel = ...,
-        **extra: t.Any
+        **extra: Any
     ) -> None:
         super().__init__(
             default=default,

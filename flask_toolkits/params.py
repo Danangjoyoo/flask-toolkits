@@ -1,15 +1,15 @@
-import typing as t
+from typing import Union, Any
 
 from .fields import Path, Header, Query, Body
 
 _ParamsClass = [Header, Query, Path, Body]
-ParamsType = t.Union[Header, Query, Path, Body]
+ParamsType = Union[Header, Query, Path, Body]
 
 class ParamSignature():
     def __init__(
         self,
         _name: str,
-        _type: t.Any,
+        _type: Any,
         _param_object: ParamsType
     ) -> None:
         self._name = _name

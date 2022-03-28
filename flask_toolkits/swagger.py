@@ -1,7 +1,7 @@
 from collections import defaultdict
 import json
 import os, enum
-import typing as t
+from typing import Any, Callable, Dict, Mapping, List, Tuple, Union, Optional
 from flask import Blueprint, Flask, jsonify
 from flask.scaffold import _sentinel
 from flask_swagger_ui import get_swaggerui_blueprint
@@ -17,18 +17,18 @@ class SwaggerGenerator(Blueprint):
         title: str = "Auto Swagger",
         name: str = "swagger_generator",
         import_name: str = __name__,
-        static_folder: t.Optional[t.Union[str, os.PathLike]] = None,
-        static_url_path: t.Optional[str] = None,
-        template_folder: t.Optional[str] = None,
-        url_prefix: t.Optional[str] = None,
-        subdomain: t.Optional[str] = None,
-        url_defaults: t.Optional[dict] = None,
-        root_path: t.Optional[str] = None,
-        cli_group: t.Optional[str] = ...,
+        static_folder: Optional[Union[str, os.PathLike]] = None,
+        static_url_path: Optional[str] = None,
+        template_folder: Optional[str] = None,
+        url_prefix: Optional[str] = None,
+        subdomain: Optional[str] = None,
+        url_defaults: Optional[dict] = None,
+        root_path: Optional[str] = None,
+        cli_group: Optional[str] = ...,
         documentation_url: str = "/openapi.json",
-        documentation_version: t.Optional[str] = "1.0.0",
-        documentation_description: t.Optional[str] = "",
-        documentation_servers: t.Optional[t.List[t.Dict[str, str]]] = []
+        documentation_version: Optional[str] = "1.0.0",
+        documentation_description: Optional[str] = "",
+        documentation_servers: Optional[List[Dict[str, str]]] = []
     ):
         super().__init__(
             name=name,
@@ -52,7 +52,7 @@ class SwaggerGenerator(Blueprint):
         @self.get(documentation_url)
         def get_openapi_json():
             openapi = self.generate_openapi_json()
-            with open("test.json","w") as f:
+            with open("tesjson","w") as f:
                 json.dump(openapi, f, indent=4)
             return jsonify(openapi)
     
@@ -121,7 +121,7 @@ class SwaggerGenerator(Blueprint):
                 schema["default"] = param_object.default
         return schema
 
-    def generate_parameter_schema(self, paired_params: t.Dict[str, ParamsType]):
+    def generate_parameter_schema(self, paired_params: Dict[str, ParamsType]):
         schemas = []
         for k, p in paired_params.items():
             po = p.param_object
@@ -221,7 +221,7 @@ class AutoSwagger(SwaggerGenerator):
                 endpoint="static",
             )
 
-        # Merge blueprint data into parent.
+        # Merge blueprint data into paren
         if first_bp_registration or first_name_registration:
 
             def extend(bp_dict, parent_dict):
