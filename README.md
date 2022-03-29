@@ -69,4 +69,4 @@ if __name__ == "__main__":
 
 then you can go to `http://localhost:5000/docs` and you will found you router is already documented
 
-[alt] 
+![alt text](https://github.com/Danangjoyoo/flask-toolkits/blob/main/docs/auto1.png?raw=true)
