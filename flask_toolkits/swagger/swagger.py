@@ -5,10 +5,10 @@ from typing import Any, Callable, Dict, Mapping, List, Tuple, Union, Optional
 from flask import Blueprint, Flask, jsonify
 from flask.scaffold import _sentinel
 from flask_swagger_ui import get_swaggerui_blueprint
-from pydantic import create_model
+from pydantic import BaseModel, create_model
 
-from .params import ParamsType, Header, Path, Query, Body
-from .routing import APIRouter, EndpointDefinition
+from ..params import ParamsType, Header, Path, Query, Body
+from ..routing import APIRouter, EndpointDefinition
 
 
 class SwaggerGenerator(Blueprint):
@@ -28,7 +28,10 @@ class SwaggerGenerator(Blueprint):
         documentation_url: str = "/openapi.json",
         documentation_version: Optional[str] = "1.0.0",
         documentation_description: Optional[str] = "",
-        documentation_servers: Optional[List[Dict[str, str]]] = []
+        documentation_servers: Optional[List[Dict[str, str]]] = [],
+        additional_path: dict = {},
+        additional_components: dict = {},
+        additional_components_schema: dict = {}
     ):
         super().__init__(
             name=name,
@@ -48,6 +51,10 @@ class SwaggerGenerator(Blueprint):
             description=documentation_description,
             servers=documentation_servers
         )
+
+        self.additional_path = additional_path
+        self.additional_components = additional_components
+        self.additional_components_schema = additional_components_schema
 
         @self.get(documentation_url)
         def get_openapi_json():
@@ -72,7 +79,9 @@ class SwaggerGenerator(Blueprint):
             },
             "servers": [{"url": s} for s in servers],
             "paths":{},
-            "components":{},
+            "components":{
+                "schemas":{}
+            },
             "security":[]
         }
         return template
@@ -98,8 +107,6 @@ class SwaggerGenerator(Blueprint):
                         if body_schema:
                             if "definitions" in body_schema:
                                 definitions = body_schema.pop("definitions")
-                                if not "schemas" in self.template["components"]:
-                                    self.template["components"]["schemas"] = {}
                                 self.template["components"]["schemas"].update(definitions)
                             self.template["paths"][ep.rule][ep.method]["requestBody"] = {
                                 "content":{
@@ -108,6 +115,12 @@ class SwaggerGenerator(Blueprint):
                                     }
                                 }
                             }
+        if self.additional_path:
+            self.template["paths"].update(self.additional_path)
+        if self.additional_components:
+            self.template["components"] = self.additional_components
+        if self.additional_components_schema:
+            self.template["components"]["schemas"] = self.additional_components_schema
         return self.template
     
     def generate_parameter_sub_schema(self, key, param_object):
@@ -138,14 +151,22 @@ class SwaggerGenerator(Blueprint):
         return schemas
     
     def generate_request_body_schema(self, name, paired_params):
-        preschema = {}
+        preschema = {}      
+        lk = ""
         for k, p in paired_params.items():
             po = p.param_object
             if type(po) == Body:
-                preschema[k] = (po.pydantic_model, ...)
+                if po.pydantic_model:
+                    preschema[k] = (po.pydantic_model, ...)
+                else:
+                    preschema[k] = (p._type, ...)
+                lk = k
         if preschema:
             if len(preschema) == 1:
-                ss = preschema[k][0]
+                if BaseModel.__subclasscheck__(preschema[lk][0].__class__):
+                    ss = preschema[k][0]
+                else:
+                    ss = create_model(name, **preschema)
             else:
                 ss = create_model(name, **preschema)
             return ss.schema(ref_template="#/components/schemas/{model}")
@@ -172,13 +193,19 @@ class AutoSwagger(SwaggerGenerator):
         description: str = "Auto Swagger Documentation for Flask ",
         servers: list = [],
         base_url: str = "/docs",
-        json_url: str = "/openapi.json"
+        json_url: str = "/openapi.json",
+        additional_path: dict = {},
+        additional_components: dict = {},
+        additional_components_schema: dict = {}
     ) -> None:
         super().__init__(
             title=title,
             documentation_version=version,
             documentation_description=description,
-            documentation_servers=servers
+            documentation_servers=servers,
+            additional_path=additional_path,
+            additional_components=additional_components,
+            additional_components_schema=additional_components_schema
         )
         self.swagger_ui = get_swaggerui_blueprint(base_url=base_url, api_url=json_url)
     

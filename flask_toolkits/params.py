@@ -17,3 +17,6 @@ class ParamSignature():
         self._default = _param_object.default
         self.param_object = _param_object
         self.param_object.dtype = _type
+    
+    def __repr__(self) -> str:
+        return f"ParamSignature(name={self._name}, type={self._type}, default={self._default}, param_object={self.param_object})"
