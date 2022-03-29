@@ -1,6 +1,6 @@
 Metadata-Version: 2.1
 Name: flask-toolkits
-Version: 0.0.5
+Version: 0.0.6
 Summary: Flask toolkits to boost your development and simplify flask, its featured with AutoSwagger
 Home-page: UNKNOWN
 Author: danangjoyoo (Agus Danangjoyo)
@@ -56,9 +56,7 @@ Description: # Flask Toolkits
         `main.py`
         ```
         from flask import Flask
-        from flask_toolkits import APIRouter, AutoSwagger
-        from flask_toolkits.responses import JSONResponse, PlainTextResponse
-        from flask_toolkits.swagger import PathTemplate
+        from flask_toolkits import AutoSwagger
         
         from email_view import router as email_router
         

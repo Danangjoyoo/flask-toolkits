@@ -48,9 +48,7 @@ def get_email(
 `main.py`
 ```
 from flask import Flask
-from flask_toolkits import APIRouter, AutoSwagger
-from flask_toolkits.responses import JSONResponse, PlainTextResponse
-from flask_toolkits.swagger import PathTemplate
+from flask_toolkits import AutoSwagger
 
 from email_view import router as email_router
 
