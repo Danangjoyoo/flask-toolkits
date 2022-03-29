@@ -203,7 +203,7 @@ class Body(BaseParams):
         example: Any = Undefined,
         examples: Optional[Dict[str, Any]] = None,
         deprecated: Optional[bool] = None,
-        pydantic_model: BaseModel = ...,
+        pydantic_model: BaseModel = None,
         **extra: Any
     ) -> None:
         super().__init__(

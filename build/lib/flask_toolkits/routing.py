@@ -2,6 +2,7 @@ from collections import defaultdict
 import enum
 import json
 import os, inspect
+import typing as t
 from typing import Any, Callable, Dict, Mapping, List, Tuple, Union, Optional
 from flask import Flask, Blueprint, Response, jsonify, request, Request
 from flask.scaffold import _sentinel
@@ -10,6 +11,7 @@ import pydantic
 
 from .exceptions import SwaggerPathError
 from .dependencies import Depends
+from .schemas import BaseSchema
 from .params import (
     _ParamsClass,
     ParamsType,
@@ -19,32 +21,6 @@ from .params import (
     Query,
     Body
 )
-
-class BaseSchema(BaseModel):
-    def __init__(__pydantic_self__, **data: Any) -> None:
-        data = __pydantic_self__.dict2pydantic(data)
-        super().__init__(**data)
-
-    @classmethod
-    def get_non_exist_var_in_kwargs(cls, **kwargs):
-        empty_keys = []
-        keys = cls.__annotations__.keys()
-        for k in keys:
-            if k not in kwargs:
-                empty_keys.append(k)
-        return empty_keys
-
-    @classmethod
-    def dict2pydantic(cls, datas: dict) -> dict:
-        newDatas = {}
-        annots = cls.__annotations__
-        for key, data in datas.items():
-            if key in annots:
-                if BaseSchema.__subclasscheck__(annots[key]):
-                    newDatas[key] = annots[key](**data)
-                    continue
-            newDatas[key] = data
-        return newDatas
 
 
 class EndpointDefinition():
@@ -428,7 +404,8 @@ class APIRouter(Blueprint):
     ) -> Callable:
         
         def decorator(func: Callable) -> Callable:
-            paired_params = self._get_func_signature(rule, func)
+            http_method = options["methods"][0]
+            paired_params = self._get_func_signature(rule, http_method, func)
             self.paired_signature[self.url_prefix+rule] = paired_params
             pydantic_model = self.generate_endpoint_pydantic(func.__name__+"Schema", func)
 
@@ -455,7 +432,7 @@ class APIRouter(Blueprint):
             self.add_url_rule(rule, endpoint, f, **options)
             defined_ep = EndpointDefinition(
                 rule=self.validate_rule_for_swagger(self.url_prefix+rule),
-                method=options["methods"][0],
+                method=http_method,
                 paired_params=paired_params,
                 tags=tags+self.tags,
                 summary=summary if summary else func.__name__,
@@ -498,7 +475,7 @@ class APIRouter(Blueprint):
     def generate_endpoint_pydantic(self, name: str, func: Callable):
         return create_model(name, __base__=BaseSchema, **self.extract_signature_params(func))
 
-    def _get_func_signature(self, path: str, func: Callable):
+    def _get_func_signature(self, path: str, method: str, func: Callable):
         params_signature = inspect.signature(func).parameters
         annots = func.__annotations__
         pair = {}
@@ -519,7 +496,7 @@ class APIRouter(Blueprint):
                     default_value = p.default
             else:
                 default_value = Query(...)
-            
+
             ## check path params
             if self.check_params_in_path(k, path):
                 default_value = Path(default_value.default)
@@ -531,8 +508,12 @@ class APIRouter(Blueprint):
                 default_type = str
             
             ## check pydantic annots
-            if BaseModel.__subclasscheck__(default_type):
-                default_value = Body(default_value.default, pydantic_model=default_type)
+            # if default_type.__class__ == t._GenericAlias:
+            #     if method.lower() in ["post", "put"]:
+            #         for a in default_type.__args__:
+            #             if BaseModel.__subclasscheck__(a):
+            #                 default_value = Body(default_value.default, pydantic_model=a)
+            #                 break
 
             pair[k] = ParamSignature(k, default_type, default_value)
         return pair
