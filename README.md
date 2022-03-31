@@ -10,7 +10,7 @@ pip install flask-toolkits
 ```
 
 ## Description
-Flask toolkits implements and provides several features from FastAPI like:
+Flask toolkits implements and provides several features from `FastAPI` like:
 - automatic API documentation using `AutoSwagger` (define the function and we'll generate the openapi spec for you)
 - Base HTTP Middleware (middleware with direct access to `request` and `response`)
 - pydantic's validator

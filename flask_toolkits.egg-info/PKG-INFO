@@ -1,6 +1,6 @@
 Metadata-Version: 2.1
 Name: flask-toolkits
-Version: 0.0.6
+Version: 0.0.7
 Summary: Flask toolkits to boost your development and simplify flask, its featured with AutoSwagger
 Home-page: UNKNOWN
 Author: danangjoyoo (Agus Danangjoyo)
@@ -18,7 +18,7 @@ Description: # Flask Toolkits
         ```
         
         ## Description
-        Flask toolkits implements and provides several features from FastAPI like:
+        Flask toolkits implements and provides several features from `FastAPI` like:
         - automatic API documentation using `AutoSwagger` (define the function and we'll generate the openapi spec for you)
         - Base HTTP Middleware (middleware with direct access to `request` and `response`)
         - pydantic's validator

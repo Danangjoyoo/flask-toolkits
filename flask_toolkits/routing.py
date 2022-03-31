@@ -484,11 +484,11 @@ class APIRouter(Blueprint):
             if p.default != inspect._empty:
                 if type(p.default) not in _ParamsClass:
                     if type(p.default) == Depends:
-                        if not p.defaulobj:
+                        if not p.default.obj:
                             if k in annots:
-                                p.defaulobj = annots[k]
-                        if p.defaulobj:
-                            pair.update(self._get_func_signature(path, p.defaulobj))
+                                p.default.obj = annots[k]
+                        if p.default.obj:
+                            pair.update(self._get_func_signature(path, p.default.obj))
                         continue
                     else:
                         default_value = Query(p.default)
