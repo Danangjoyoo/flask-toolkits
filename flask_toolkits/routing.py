@@ -2,6 +2,7 @@ from collections import defaultdict
 import enum
 import json
 import os, inspect
+from sys import prefix
 import typing as t
 from typing import Any, Callable, Dict, Mapping, List, Tuple, Union, Optional
 from flask import Flask, Blueprint, Response, jsonify, request, Request
@@ -157,7 +158,7 @@ class APIRouter(Blueprint):
         static_folder: Optional[Union[str, os.PathLike]] = None,
         static_url_path: Optional[str] = None,
         template_folder: Optional[str] = None,
-        url_prefix: Optional[str] = None,
+        url_prefix: Optional[str] = "",
         subdomain: Optional[str] = None,
         url_defaults: Optional[dict] = None,
         root_path: Optional[str] = None,
@@ -402,6 +403,8 @@ class APIRouter(Blueprint):
         custom_swagger: Optional[Dict[str, Any]] = None,
         **options: Any
     ) -> Callable:
+
+        assert rule[0] == "/", f"path rule must starts with '/' -> {rule}"
         
         def decorator(func: Callable) -> Callable:
             http_method = options["methods"][0]

@@ -1,5 +1,8 @@
+LICENSE
 README.md
 setup.py
+.github/workflows/python-publish.yml
+docs/auto1.png
 flask_toolkits/__init__.py
 flask_toolkits/dependencies.py
 flask_toolkits/exceptions.py
@@ -17,3 +20,6 @@ flask_toolkits.egg-info/top_level.txt
 flask_toolkits/swagger/__init__.py
 flask_toolkits/swagger/swagger.py
 flask_toolkits/swagger/template.py
+flask_toolkits/swagger/__pycache__/__init__.cpython-38.pyc
+flask_toolkits/swagger/__pycache__/swagger.cpython-38.pyc
+flask_toolkits/swagger/__pycache__/template.cpython-38.pyc

@@ -68,6 +68,7 @@ class HTMLResponse(ResponseBase):
             Iterable[Tuple[str, Union[str, int]]]]
         ] = None
     ) -> None:
+        response = str(response) if response != None else None
         super().__init__(response, status_code, headers, mimetype="text/html")
 
 
@@ -81,4 +82,5 @@ class PlainTextResponse(ResponseBase):
             Iterable[Tuple[str, Union[str, int]]]]
         ] = None
     ) -> None:
+        response = str(response) if response != None else None
         super().__init__(response, status_code, headers, mimetype="text/plain")
