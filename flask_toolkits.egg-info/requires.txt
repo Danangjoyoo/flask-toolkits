@@ -1,5 +1,0 @@
-flask
-flask-http-middleware
-flask-swagger-ui
-pydantic
-werkzeug

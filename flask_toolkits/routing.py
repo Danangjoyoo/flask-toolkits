@@ -379,7 +379,7 @@ class APIRouter(Blueprint):
         if "methods" in options:
             raise TypeError("Use the 'route' decorator to use the 'methods' argumen")
         return self.route(
-            rule=rule,
+            rule=self.validate_rule(rule),
             methods=[method],
             tags=tags,
             summary=summary,
@@ -408,7 +408,7 @@ class APIRouter(Blueprint):
         
         def decorator(func: Callable) -> Callable:
             http_method = options["methods"][0]
-            paired_params = self._get_func_signature(rule, http_method, func)
+            paired_params = self._get_func_signature(rule, func)
             self.paired_signature[self.url_prefix+rule] = paired_params
             pydantic_model = self.generate_endpoint_pydantic(func.__name__+"Schema", func)
 
@@ -435,6 +435,7 @@ class APIRouter(Blueprint):
             self.add_url_rule(rule, endpoint, f, **options)
             defined_ep = EndpointDefinition(
                 rule=self.validate_rule_for_swagger(self.url_prefix+rule),
+                # rule=self.url_prefix+rule,
                 method=http_method,
                 paired_params=paired_params,
                 tags=tags+self.tags,
@@ -478,7 +479,7 @@ class APIRouter(Blueprint):
     def generate_endpoint_pydantic(self, name: str, func: Callable):
         return create_model(name, __base__=BaseSchema, **self.extract_signature_params(func))
 
-    def _get_func_signature(self, path: str, method: str, func: Callable):
+    def _get_func_signature(self, path: str, func: Callable):
         params_signature = inspect.signature(func).parameters
         annots = func.__annotations__
         pair = {}
@@ -487,12 +488,17 @@ class APIRouter(Blueprint):
             if p.default != inspect._empty:
                 if type(p.default) not in _ParamsClass:
                     if type(p.default) == Depends:
-                        if not p.default.obj:
-                            if k in annots:
-                                p.default.obj = annots[k]
-                        if p.default.obj:
-                            pair.update(self._get_func_signature(path, p.default.obj))
-                        continue
+                        try:
+                            if k not in annots:
+                                annots[k] = str
+                            if not p.default.obj:
+                                if k in annots:
+                                    p.default.obj = annots[k]
+                            if callable(p.default.obj):
+                                pair.update(self._get_func_signature(path, p.default.obj))
+                            continue
+                        except:
+                            default_value = Query(None)    
                     else:
                         default_value = Query(p.default)
                 else:
@@ -502,6 +508,7 @@ class APIRouter(Blueprint):
 
             ## check path params
             if self.check_params_in_path(k, path):
+                print(path, k)
                 default_value = Path(default_value.default)
             
             ## get default type
@@ -510,22 +517,60 @@ class APIRouter(Blueprint):
             else:
                 default_type = str
             
-            ## check pydantic annots
-            # if default_type.__class__ == t._GenericAlias:
-            #     if method.lower() in ["post", "put"]:
-            #         for a in default_type.__args__:
-            #             if BaseModel.__subclasscheck__(a):
-            #                 default_value = Body(default_value.default, pydantic_model=a)
-            #                 break
+            # check pydantic annots
+            default_value = self.define_body_from_annots(default_value, default_type)
 
             pair[k] = ParamSignature(k, default_type, default_value)
         return pair
+    
+    def define_body_from_annots(self, default_value, annot):
+        pydantic_model = self.get_pydantic_from_annots(annot)
+        if pydantic_model:
+            return Body(default_value.default, pydantic_model=pydantic_model)
+        else:
+            return default_value
+    
+    def get_pydantic_from_annots(self, annot):
+        try:
+            if BaseModel.__subclasscheck__(annot):
+                return annot
+        except:
+            pass
+        if annot.__class__ == t._GenericAlias:
+            for a in annot.__args__:
+                b = self.get_pydantic_from_annots(a)
+                if BaseModel.__subclasscheck__(b):
+                    return b
+        return None
 
     def validate_rule_for_swagger(self, rule: str):
         if rule.count("<") == rule.count(">"):
             rule = rule.replace("<","{")
             rule = rule.replace(">", "}")
             return rule
+        error = f"Invalid use of <path_params> in rule: {rule}"
+        raise SwaggerPathError(error)
+    
+    def validate_rule(self, rule: str):
+        if rule.count("<") == rule.count(">"):
+            new_rule = ""
+            start_write_path = False
+            start_path = []
+            for c in rule:
+                if c == "{":
+                    start_path.append("")
+                    start_write_path = True
+                elif c == "}":
+                    assert start_path[-1].count(":") in [0,1], f"Multiple type definition using ':' in path -> {rule}"
+                    start_path[-1] = start_path[-1][start_path[-1].index(":")+1:]
+                    start_write_path = False
+                    new_rule += "{" + start_path[-1] + "}"
+                else:
+                    if not start_write_path:
+                        new_rule += c
+                    else:
+                        start_path[-1] += c
+            return new_rule
         error = f"Invalid use of <path_params> in rule: {rule}"
         raise SwaggerPathError(error)
 
@@ -544,11 +589,13 @@ class APIRouter(Blueprint):
                 if k in paired_params:
                     po = paired_params[k].param_object
                     if type(po) == Body:
-                        if BaseModel.__subclasscheck__(po.dtype):
-                            if total_body == 1:
-                                kwargs[k] = po.dtype(**request.json)
-                            else:
-                                kwargs[k] = po.dtype(**request.json[k])
+                        b = self.get_pydantic_from_annots(po.dtype)
+                        if b:
+                            if BaseModel.__subclasscheck__(b):
+                                if total_body == 1:
+                                    kwargs[k] = b(**request.json)
+                                else:
+                                    kwargs[k] = b(**request.json[k])
         valid_kwargs = pydantic_model(**kwargs)
         return vars(valid_kwargs)
 

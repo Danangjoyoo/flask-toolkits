@@ -4,9 +4,9 @@ import os, enum
 from typing import Any, Callable, Dict, Mapping, List, Tuple, Union, Optional
 from flask import Blueprint, Flask, jsonify
 from flask.scaffold import _sentinel
-from flask_swagger_ui import get_swaggerui_blueprint
 from pydantic import BaseModel, create_model
 
+from .flask_swagger_ui import get_swaggerui_blueprint
 from ..params import ParamsType, Header, Path, Query, Body
 from ..routing import APIRouter, EndpointDefinition
 

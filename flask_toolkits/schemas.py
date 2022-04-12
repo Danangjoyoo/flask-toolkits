@@ -20,9 +20,10 @@ class BaseSchema(BaseModel):
         newDatas = {}
         annots = cls.__annotations__
         for key, data in datas.items():
+            assert data != ..., f"Invalid value -> {key}"
             if key in annots:
                 if type(annots[key]) == type:
-                    if BaseSchema.__subclasscheck__(annots[key]):
+                    if BaseModel.__subclasscheck__(annots[key]):
                         newDatas[key] = annots[key](**data)
                         continue
             newDatas[key] = data
