@@ -1,0 +1,2 @@
+include *.html *.css *.js *.png *.py
+recursive-include ./flask_toolkits/swagger/ *.html *.css *.js *.png *.py
