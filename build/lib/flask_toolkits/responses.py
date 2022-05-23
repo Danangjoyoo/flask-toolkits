@@ -35,14 +35,12 @@ class SwaggerJSONEncoder(JSONEncoder):
                 return o.dict()
             if enum.Enum.__subclasscheck__(o.__class__):
                 return o.value
-        except:
-            print(123, o)
+        finally:
             try:
-                return o.__repr__()
+                oo = super().default(o)            
             except:
-                pass
-                # return str(o)
-        return super().default(o)
+                oo = o.__repr__()
+        return oo
 
 class JSONResponse(ResponseBase):
     def __init__(

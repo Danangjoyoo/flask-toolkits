@@ -2,7 +2,6 @@ from collections import defaultdict
 import enum
 import json
 import os, inspect
-from sys import prefix
 import typing as t
 from typing import Any, Callable, Dict, Mapping, List, Tuple, Union, Optional
 from flask import Flask, Blueprint, Response, jsonify, request, Request
@@ -10,6 +9,7 @@ from flask.scaffold import _sentinel
 from pydantic import BaseModel, create_model
 import pydantic
 
+from .responses import JSONResponse
 from .exceptions import SwaggerPathError
 from .dependencies import Depends
 from .schemas import BaseSchema
@@ -377,7 +377,7 @@ class APIRouter(Blueprint):
         custom_swagger: Optional[Dict[str, Any]] = None,
     ) -> Callable:
         if "methods" in options:
-            raise TypeError("Use the 'route' decorator to use the 'methods' argumen")
+            raise TypeError("Use the 'route' decorator to use the 'methods' argument")
         return self.route(
             rule=self.validate_rule(rule),
             methods=[method],
@@ -390,6 +390,22 @@ class APIRouter(Blueprint):
             custom_swagger=custom_swagger,
             **options
             )
+
+    def add_url_rule(
+        self,
+        rule: str,
+        endpoint: t.Optional[str] = None,
+        view_func: t.Optional[t.Callable] = None,
+        provide_automatic_options: t.Optional[bool] = None,
+        **options: t.Any
+    ) -> None:
+        self.route(
+            rule=self.validate_rule(rule),
+            methods=options.pop("methods", ["GET"]),
+            endpoint=endpoint,
+            provide_automatic_options=provide_automatic_options,
+            **options
+            )(view_func)
 
     def route(
         self,
@@ -419,10 +435,9 @@ class APIRouter(Blueprint):
                         valid_kwargs = self.fill_all_enum_value(valid_kwargs)
                         return func(**valid_kwargs)
                     except pydantic.ValidationError as e:
-                        return Response(
-                            response=json.dumps(e.errors()),
-                            status=422,
-                            mimetype="application/json"
+                        return JSONResponse(
+                            response=e.errors(),
+                            status_code=422
                             )
                     except Exception as e:
                         raise e
@@ -432,10 +447,9 @@ class APIRouter(Blueprint):
             # register endpoint
             f = create_modified_func()
             endpoint = options.pop("endpoint", None)
-            self.add_url_rule(rule, endpoint, f, **options)
+            Blueprint.add_url_rule(self, rule, endpoint, f, **options)
             defined_ep = EndpointDefinition(
                 rule=self.validate_rule_for_swagger(self.url_prefix+rule),
-                # rule=self.url_prefix+rule,
                 method=http_method,
                 paired_params=paired_params,
                 tags=tags+self.tags,
@@ -508,7 +522,6 @@ class APIRouter(Blueprint):
 
             ## check path params
             if self.check_params_in_path(k, path):
-                print(path, k)
                 default_value = Path(default_value.default)
             
             ## get default type
@@ -536,12 +549,10 @@ class APIRouter(Blueprint):
                 return annot
         except:
             pass
-        if annot.__class__ == t._GenericAlias:
+        if annot.__class__ in [t._GenericAlias, t._SpecialForm]:
             for a in annot.__args__:
                 b = self.get_pydantic_from_annots(a)
-                if BaseModel.__subclasscheck__(b):
-                    return b
-        return None
+                return b if b else None
 
     def validate_rule_for_swagger(self, rule: str):
         if rule.count("<") == rule.count(">"):

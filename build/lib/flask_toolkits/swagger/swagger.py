@@ -1,6 +1,7 @@
 from collections import defaultdict
 import json
 import os, enum
+import time
 from typing import Any, Callable, Dict, Mapping, List, Tuple, Union, Optional
 from flask import Blueprint, Flask, jsonify
 from flask.scaffold import _sentinel
@@ -12,6 +13,7 @@ from ..routing import APIRouter, EndpointDefinition
 
 
 class SwaggerGenerator(Blueprint):
+    """Swagger Spec Generator"""
     def __init__(
         self,
         title: str = "Auto Swagger",
@@ -87,22 +89,32 @@ class SwaggerGenerator(Blueprint):
         return template
     
     def generate_openapi_json(self):
-        for router in APIRouter._api_routers.values():
+        for router in APIRouter._api_routers.values():            
             if router._is_registered:
                 for ep in router.defined_endpoints:
                     ep: EndpointDefinition
                     if ep.rule not in self.template["paths"]:
                         self.template["paths"][ep.rule] = {}
+                    
+                    ## custom swagger for one endpoint
                     if ep.custom_swagger:
                         self.template["paths"][ep.rule][ep.method] = ep.custom_swagger
                         continue
+
+                    ## defining swagger if enabled
                     if ep.auto_swagger:
+                        ## define path, query, header schema
+                        param_schema, param_definition_schema = self.generate_parameter_schema(ep.paired_params)
                         self.template["paths"][ep.rule][ep.method] = {
                             "tags": ep.tags,
                             "summary": ep.summary,
-                            "parameters": self.generate_parameter_schema(ep.paired_params),
+                            "parameters": param_schema,
                             "responses": ep.responses
                         }
+                        if param_definition_schema:
+                            self.template["components"]["schemas"].update(param_definition_schema)                        
+                        
+                        ## define body schema
                         body_schema = self.generate_request_body_schema(ep.rule.replace("/","-"), ep.paired_params)
                         if body_schema:
                             if "definitions" in body_schema:
@@ -124,31 +136,40 @@ class SwaggerGenerator(Blueprint):
         return self.template
     
     def generate_parameter_sub_schema(self, key, param_object):
-        schema = {
-            "title": key,
-            "type": self.get_schema_dtype(param_object.dtype)
-        }
+        pydantic_model = create_model(
+            key,
+            **{
+                key: (param_object.dtype, param_object.default)
+            }
+        )
+        schema = pydantic_model.schema(ref_template="#/components/schemas/{model}")
+        schema["type"] = self.get_schema_dtype(param_object.dtype)
         if param_object.description:
             schema["description"] = param_object.description
-        if param_object.default and type(param_object.default) != type(...):
-                schema["default"] = param_object.default
         return schema
 
     def generate_parameter_schema(self, paired_params: Dict[str, ParamsType]):
         schemas = []
+        definitions = {}
         for k, p in paired_params.items():
             po = p.param_object
             if type(po) in [Header, Path, Query]:
+                sub_schema = self.generate_parameter_sub_schema(k, po)
                 schema = {
                     "required": po.default == ...,
-                    "schema": self.generate_parameter_sub_schema(k, po),
                     "name": k,
                     "in": po._type.value
                 }
                 if po.description:
                     schema["description"] = po.description
+                if "definitions" in sub_schema:
+                    definitions.update(sub_schema.pop("definitions"))
+                    allof = sub_schema.pop("properties")[k]
+                    schema["schema"] = {"allOf": [allof]}
+                else:
+                    schema["schema"] = sub_schema
                 schemas.append(schema)
-        return schemas
+        return schemas, definitions
     
     def generate_request_body_schema(self, name, paired_params):
         preschema = {}      
@@ -183,9 +204,13 @@ class SwaggerGenerator(Blueprint):
         }
         if dtype in schema_data_type:
             return schema_data_type[dtype]
+        else:
+            if dtype.__class__ == enum.EnumMeta:
+                return "enum"
         return "string"
 
 class AutoSwagger(SwaggerGenerator):
+    """Swagger Generator Blueprints to allow automatic documentation for flask's view functions"""
     def __init__(
         self,
         title: str = "Auto Swagger",

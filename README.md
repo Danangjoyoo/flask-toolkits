@@ -2,9 +2,7 @@
 [![Downloads](https://static.pepy.tech/personalized-badge/flask-toolkits?period=total&units=international_system&left_color=black&right_color=blue&left_text=Downloads)](https://pepy.tech/project/flask-toolkits)
 
 ## Repository
-- [ ] [GITHUB](https://github.com/Danangjoyoo/flask-toolkits)
-- [ ] [GITHUB](https://github.com/Danangjoyoo/flask-toolkits)
-- [ ] [flask-http-middleware](https://pypi.org/project/flask-http-middleware)
+- [GITHUB](https://github.com/Danangjoyoo/flask-toolkits)
 
 ## Installation
 ```
@@ -13,10 +11,11 @@ pip install flask-toolkits
 
 ## Description
 Flask toolkits implements and provides several features from `FastAPI` like:
-- automatic API documentation using `AutoSwagger` (define the function and we'll generate the openapi spec for you)
-- Base HTTP Middleware (middleware with direct access to `request` and `response`)
-- pydantic's validator
-- Response functions that could return any type of data without worried to get error
+- Automatic API documentation (define the function and we'll generate the `swagger`/`openapi` spec for you)
+- Passing parameters through `view`/`router` function which is unable in `Flask` before
+- Easy Middleware setup
+- Parameters and schema validation using `Pydantic`
+- Response classes that could return any type of data without worried to get error
 - much more..
 
 
@@ -28,6 +27,9 @@ Flask toolkits implements and provides several features from `FastAPI` like:
     - [pydantic](https://pypi.org/project/pydantic) support for JSON arguments and validation
     - Multiple response type generator
     - Added `JSONResponse` class to replace `jsonify` roles in send dictionary data with encoding improvements.
+- v0.2
+    - Supported enumeration API documentation
+    - Added support for type hint from `typing`'s generic (ex: `Optional`, `Union`, `List`)
 
 ## Key Tools inside this `toolkit`
 - Automatic API documentation (`swagger`/`openapi`)
