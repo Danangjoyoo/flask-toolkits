@@ -10,6 +10,7 @@ flask_toolkits/params.py
 flask_toolkits/responses.py
 flask_toolkits/routing.py
 flask_toolkits/schemas.py
+flask_toolkits/security.py
 flask_toolkits/status.py
 flask_toolkits.egg-info/PKG-INFO
 flask_toolkits.egg-info/SOURCES.txt

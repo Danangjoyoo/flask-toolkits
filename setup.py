@@ -7,7 +7,7 @@ from pathlib import Path
 this_directory = Path(__file__).parent
 long_description = (this_directory / "README.md").read_text()
 
-VERSION = "0.2.0"
+VERSION = "0.4.3"
 DESCRIPTION = "Flask toolkits to boost your development and simplify flask, its featured with AutoSwagger"
 
 # Setting up
@@ -20,14 +20,18 @@ setup(
     long_description_content_type="text/markdown",
     long_description=long_description,
     packages=find_packages(),
-    install_requires=["flask","werkzeug","flask-http-middleware", "pydantic"],
-    keywords=['flask', 'middleware', 'http', 'request', "response", "autoswagger", "openapi", "toolkit"],
+    install_requires=["flask","werkzeug","flask-http-middleware", "pydantic", "python-jose"],
+    keywords=['flask', 'middleware', 'http', 'request', "response", "swagger", "openapi", "toolkit"],
     include_package_data=True,
     classifiers=[
         "Development Status :: 4 - Beta",
         "Intended Audience :: Developers",
         "Programming Language :: Python :: 3 :: Only",
+        "Programming Language :: Python :: 3.6",
+        "Programming Language :: Python :: 3.7",
         "Programming Language :: Python :: 3.8",
+        "Programming Language :: Python :: 3.9",
+        "Programming Language :: Python :: 3.10",
         "Environment :: Web Environment",
         "Operating System :: OS Independent",
         "Typing :: Typed"

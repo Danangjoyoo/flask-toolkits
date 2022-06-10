@@ -13,14 +13,20 @@ from .responses import JSONResponse
 from .exceptions import SwaggerPathError
 from .dependencies import Depends
 from .schemas import BaseSchema
+from .security import HTTPSecurityBase
 from .params import (
-    _ParamsClass,
+    _ParamsClasses,
     ParamsType,
+    _FormClasses,
+    FormType,
     ParamSignature,
     Header,
     Path,
     Query,
-    Body
+    Body,
+    Form,
+    FormURLEncoded,
+    File
 )
 
 
@@ -64,7 +70,8 @@ class EndpointDefinition():
         responses: Optional[Dict[Union[int, str], Dict[str, Any]]] = None,
         auto_swagger: bool = True,
         custom_swagger: Optional[Dict[str, Any]] = None,
-        pydantic_model: BaseModel = None
+        pydantic_model: BaseModel = None,
+        security: Optional[HTTPSecurityBase] = None
     ) -> None:
         self.rule = rule
         self.method = method.lower()
@@ -76,6 +83,7 @@ class EndpointDefinition():
         self.auto_swagger = auto_swagger
         self.custom_swagger = custom_swagger
         self.pydantic_model = pydantic_model
+        self.security = security
         if responses:
             self.responses = responses
         else:
@@ -164,7 +172,8 @@ class APIRouter(Blueprint):
         root_path: Optional[str] = None,
         cli_group: Optional[str] = _sentinel,
         tags: Optional[List[str]] = [],
-        auto_swagger: bool = True
+        auto_swagger: bool = True,
+        security: Optional[HTTPSecurityBase] = None
     ):
         super().__init__(
             name=name,
@@ -183,7 +192,8 @@ class APIRouter(Blueprint):
         self.defined_endpoints = []
         self._is_registered = False
         self._enable_auto_swagger = auto_swagger
-        self.tags = tags or [name]
+        self.tags = tags
+        self.security = security
 
     def register(self, app: Flask, options: dict) -> None:
         name_prefix = options.get("name_prefix", "")
@@ -303,9 +313,10 @@ class APIRouter(Blueprint):
         responses: Optional[Dict[Union[int, str], Dict[str, Any]]] = None,
         auto_swagger: bool = True,
         custom_swagger: Optional[Dict[str, Any]] = None,
+        security: Optional[HTTPSecurityBase] = None,
         **options: Any
     ) -> Callable:
-        return self._method_route("GET", rule, options, tags, summary, description, response_description, responses, auto_swagger, custom_swagger)
+        return self._method_route("GET", rule, options, tags, summary, description, response_description, responses, auto_swagger, custom_swagger, security)
 
     def post(
         self,
@@ -317,9 +328,10 @@ class APIRouter(Blueprint):
         responses: Optional[Dict[Union[int, str], Dict[str, Any]]] = None,
         auto_swagger: bool = True,
         custom_swagger: Optional[Dict[str, Any]] = None,
+        security: Optional[HTTPSecurityBase] = None,
         **options: Any
     ) -> Callable:
-        return self._method_route("POST", rule, options, tags, summary, description, response_description, responses, auto_swagger, custom_swagger)
+        return self._method_route("POST", rule, options, tags, summary, description, response_description, responses, auto_swagger, custom_swagger, security)
     
     def put(
         self,
@@ -331,9 +343,10 @@ class APIRouter(Blueprint):
         responses: Optional[Dict[Union[int, str], Dict[str, Any]]] = None,
         auto_swagger: bool = True,
         custom_swagger: Optional[Dict[str, Any]] = None,
+        security: Optional[HTTPSecurityBase] = None,
         **options: Any
     ) -> Callable:
-        return self._method_route("PUT", rule, options, tags, summary, description, response_description, responses, auto_swagger, custom_swagger)
+        return self._method_route("PUT", rule, options, tags, summary, description, response_description, responses, auto_swagger, custom_swagger, security)
 
     def delete(
         self,
@@ -345,9 +358,10 @@ class APIRouter(Blueprint):
         responses: Optional[Dict[Union[int, str], Dict[str, Any]]] = None,
         auto_swagger: bool = True,
         custom_swagger: Optional[Dict[str, Any]] = None,
+        security: Optional[HTTPSecurityBase] = None,
         **options: Any
     ) -> Callable:
-        return self._method_route("DELETE", rule, options, tags, summary, description, response_description, responses, auto_swagger, custom_swagger)
+        return self._method_route("DELETE", rule, options, tags, summary, description, response_description, responses, auto_swagger, custom_swagger, security)
     
     def patch(
         self,
@@ -359,9 +373,10 @@ class APIRouter(Blueprint):
         responses: Optional[Dict[Union[int, str], Dict[str, Any]]] = None,
         auto_swagger: bool = True,
         custom_swagger: Optional[Dict[str, Any]] = None,
+        security: Optional[HTTPSecurityBase] = None,
         **options: Any
     ) -> Callable:
-        return self._method_route("PATCH", rule, options, tags, summary, description, response_description, responses, auto_swagger, custom_swagger)
+        return self._method_route("PATCH", rule, options, tags, summary, description, response_description, responses, auto_swagger, custom_swagger, security)
     
     def _method_route(
         self,
@@ -375,6 +390,7 @@ class APIRouter(Blueprint):
         responses: Optional[Dict[Union[int, str], Dict[str, Any]]] = None,
         auto_swagger: bool = True,
         custom_swagger: Optional[Dict[str, Any]] = None,
+        security: Optional[HTTPSecurityBase] = None,
     ) -> Callable:
         if "methods" in options:
             raise TypeError("Use the 'route' decorator to use the 'methods' argument")
@@ -388,6 +404,7 @@ class APIRouter(Blueprint):
             responses=responses,
             auto_swagger=auto_swagger,
             custom_swagger=custom_swagger,
+            security=security,
             **options
             )
 
@@ -397,6 +414,14 @@ class APIRouter(Blueprint):
         endpoint: t.Optional[str] = None,
         view_func: t.Optional[t.Callable] = None,
         provide_automatic_options: t.Optional[bool] = None,
+        tags: Optional[List[str]] = [],
+        summary: Optional[str] = None,
+        description: Optional[str] = None,
+        response_description: str = "Successful Response",
+        responses: Optional[Dict[Union[int, str], Dict[str, Any]]] = None,
+        auto_swagger: bool = True,
+        custom_swagger: Optional[Dict[str, Any]] = None,
+        security: Optional[HTTPSecurityBase] = None,
         **options: t.Any
     ) -> None:
         self.route(
@@ -404,8 +429,16 @@ class APIRouter(Blueprint):
             methods=options.pop("methods", ["GET"]),
             endpoint=endpoint,
             provide_automatic_options=provide_automatic_options,
+            tags=tags,
+            summary=summary,
+            description=description,
+            response_description=response_description,
+            responses=responses,
+            auto_swagger=auto_swagger,
+            custom_swagger=custom_swagger,
+            security=security,
             **options
-            )(view_func)
+        )(view_func)
 
     def route(
         self,
@@ -417,10 +450,14 @@ class APIRouter(Blueprint):
         responses: Optional[Dict[Union[int, str], Dict[str, Any]]] = None,
         auto_swagger: bool = True,
         custom_swagger: Optional[Dict[str, Any]] = None,
+        security: Optional[HTTPSecurityBase] = None,
         **options: Any
     ) -> Callable:
 
         assert rule[0] == "/", f"path rule must starts with '/' -> {rule}"
+
+        if not security:
+            security = self.security
         
         def decorator(func: Callable) -> Callable:
             http_method = options["methods"][0]
@@ -431,8 +468,9 @@ class APIRouter(Blueprint):
             def create_modified_func():
                 def modified_func(**paths):
                     try:
-                        valid_kwargs = self.get_kwargs(paths, request, paired_params, pydantic_model)
-                        valid_kwargs = self.fill_all_enum_value(valid_kwargs)
+                        if security:
+                            req = security(request)
+                        valid_kwargs = self.get_kwargs(paths, req, paired_params, pydantic_model)
                         return func(**valid_kwargs)
                     except pydantic.ValidationError as e:
                         return JSONResponse(
@@ -452,14 +490,15 @@ class APIRouter(Blueprint):
                 rule=self.validate_rule_for_swagger(self.url_prefix+rule),
                 method=http_method,
                 paired_params=paired_params,
-                tags=tags+self.tags,
+                tags=tags+self.tags or ["default"],
                 summary=summary if summary else func.__name__,
                 description=description if description else func.__name__,
                 response_description=response_description,
                 responses=responses,
                 auto_swagger=self._enable_auto_swagger & auto_swagger,
                 custom_swagger=custom_swagger,
-                pydantic_model=pydantic_model
+                pydantic_model=pydantic_model,
+                security=security
                 )
             self.defined_endpoints.append(defined_ep)
             return func
@@ -479,12 +518,18 @@ class APIRouter(Blueprint):
             return o
         return o
 
+    def check_default_val_signature(self, default_val):
+        if default_val != inspect._empty:
+            return default_val
+        return ...
+
+
     def extract_signature_params(self, func: Callable):
         """Extract the signature of a function as parameters"""
         annots = func.__annotations__
         fsig = inspect.signature(func)
         default_val = {
-            k: v.default if v.default != inspect._empty else ... 
+            k: self.check_default_val_signature(v.default)
             for k,v in fsig.parameters.items()
             }
         res = {k: (annots[k] if k in annots else str, d) for k, d in default_val.items()}
@@ -500,7 +545,7 @@ class APIRouter(Blueprint):
         for k, p in params_signature.items():
             ## get default value
             if p.default != inspect._empty:
-                if type(p.default) not in _ParamsClass:
+                if type(p.default) not in _ParamsClasses:
                     if type(p.default) == Depends:
                         try:
                             if k not in annots:
@@ -528,10 +573,14 @@ class APIRouter(Blueprint):
             if k in annots:
                 default_type = annots[k]
             else:
-                default_type = str
+                if type(default_value) in _FormClasses:
+                    default_type = Any
+                else:
+                    default_type = str
             
             # check pydantic annots
-            default_value = self.define_body_from_annots(default_value, default_type)
+            if type(default_value) not in _FormClasses:
+                default_value = self.define_body_from_annots(default_value, default_type)
 
             pair[k] = ParamSignature(k, default_type, default_value)
         return pair
@@ -592,7 +641,10 @@ class APIRouter(Blueprint):
         queries = request.args.to_dict()
         query_kwargs = {k: queries[k] for k in variables if k in queries}
         header_kwargs = {k: request.headers.get(k) for k in variables if request.headers.get(k)}
-        kwargs = {**query_kwargs, **header_kwargs, **paths}
+        form_kwargs = {k: request.form.get(k) for k in variables if request.form.get(k)}
+        file_kwargs = {k: request.files.get(k) for k in variables if request.files.get(k)}
+        dummy_file_kwargs = {k: "__dummy" for k in file_kwargs}
+        kwargs = {**query_kwargs, **header_kwargs, **paths, **form_kwargs, **dummy_file_kwargs}
         empty_keys = pydantic_model.get_non_exist_var_in_kwargs(**kwargs)
         total_body = self.count_required_body(paired_params)
         if total_body:
@@ -608,7 +660,10 @@ class APIRouter(Blueprint):
                                 else:
                                     kwargs[k] = b(**request.json[k])
         valid_kwargs = pydantic_model(**kwargs)
-        return vars(valid_kwargs)
+        valid_kwargs = self.fill_all_enum_value(valid_kwargs)
+        valid_kwargs = vars(valid_kwargs)
+        valid_kwargs.update(file_kwargs)
+        return valid_kwargs
 
     def count_required_body(self, paired_params: Dict[str, Any]) -> int:
         total = 0

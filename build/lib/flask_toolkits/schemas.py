@@ -1,4 +1,4 @@
-from pydantic import BaseModel
+from pydantic import BaseModel, create_model
 from typing import Any
 
 class BaseSchema(BaseModel):
@@ -28,3 +28,5 @@ class BaseSchema(BaseModel):
                         continue
             newDatas[key] = data
         return newDatas
+
+json_model = create_model

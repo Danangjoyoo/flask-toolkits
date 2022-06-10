@@ -30,6 +30,13 @@ Flask toolkits implements and provides several features from `FastAPI` like:
 - v0.2
     - Supported enumeration API documentation
     - Added support for type hint from `typing`'s generic (ex: `Optional`, `Union`, `List`)
+    - Fixed input parameter validations
+- v0.3
+    - Support `File` and `Form` input parameters validation and automatic swagger.
+    - Added constraint feature for parameters (ex: limit, max/min length, greater/less than, equals than etc)
+- v0.4
+    - Support `Authorization` header in openapi spec.
+    - Added `Authorization` processing function for security and can be used as `login` or `auth`.
 
 ## Key Tools inside this `toolkit`
 - Automatic API documentation (`swagger`/`openapi`)
@@ -58,7 +65,7 @@ def get_email(
 
 ```
 
-## AUTOMATIC API DOCUMENTATION
+## Automatic API Documentation
 Here our `APIRouter` allows you to auto-documenting your endpoint through `AutoSwagger`.
 Define the new router using `APIRouter` class, lets put it in another pyfile
 
@@ -105,6 +112,81 @@ if __name__ == "__main__":
 then you can go to `http://localhost:5000/docs` and you will found you router is already documented
 
 ![alt text](https://github.com/Danangjoyoo/flask-toolkits/blob/main/docs/auto1.png?raw=true)
+
+---
+
+## Supported Field Parameters
+`flask-toolkits` provide multiple field parameters such as `Header`, `Query`, `Body`, `Path`, `File`, `Form`
+
+---
+
+## Easy Security Scheme Setup and Documentation
+`flask-toolkits` helps you to define your security scheme for authorization easier than before. In advance this also give you automated documentation.
+
+### Basic Usage
+lets assume you have your own bearer security schema. You just have to create a new instance of `HTTPBearerSecurity()` to enable automatic documentation on it.
+```
+from flask import request
+from flask_toolkits import APIRouter
+from flask_toolkits.security import HTTPBearerSecurity
+
+router = APIRouter("api", __name__)
+
+@router.get("/home", security=HTTPBearerSecurity())
+def home(message: str):
+    if my_security_scheme(request):
+        return JSONResponse({"message": message})
+    return JSONResponse({"message": "invalid authorization"})
+```
+
+this is how it looks like
+![alt text](https://github.com/Danangjoyoo/flask-toolkits/blob/main/docs/auth0.png?raw=true)
+
+on you clicked it
+![alt text](https://github.com/Danangjoyoo/flask-toolkits/blob/main/docs/auth1.png?raw=true)
+
+### Define your own security scheme
+If you want to define your own security scheme you can follow below guidance
+```
+from flask import request
+from flask_toolkits import APIRouter
+from flask_toolkits.security import HTTPBearerSecurity
+
+class JWTBearer(HTTPBearerSecurity):
+    def __init__(self):
+        super().__init__()
+    
+    def __call__(self, req):
+        data = self.get_authorization_data(req)
+        if data != "abcdefghij":
+            raise Exception("This is not good")
+        return req
+
+router = APIRouter("api", __name__)
+
+@router.get("/home", security=JWTBearer())
+def home(message: str):
+    if my_security_scheme(request):
+        return JSONResponse({"message": message})
+    return JSONResponse({"message": "invalid authorization"})
+
+```
+Overriding `__call__` method inside the subclass would define your security schema for the routers that are using your security scheme
+
+### Define to all endpoints in a router
+Just pass it to `APIRouter` and all its endpoint will use that security scheme!
+```
+router_with_bearer = APIRouter("api", __name__, security=JWTBearer())
+```
+but don't worries! You can also override it by just defining in the router decorator!
+```
+@router_with_bearer.get("/home", security=AnotherBearerSecurity())
+def home():
+    return {"message": "hello"}
+```
+
+
+---
 
 ## Request-Response direct HTTP middleware
 ```

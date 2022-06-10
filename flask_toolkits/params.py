@@ -1,9 +1,12 @@
 from typing import Union, Any
+from pydantic import Field
 
-from .fields import Path, Header, Query, Body
+from .fields import Path, Header, Query, Body, Form, FormURLEncoded, File
 
-_ParamsClass = [Header, Query, Path, Body]
-ParamsType = Union[Header, Query, Path, Body]
+_ParamsClasses = (Path, Header, Query, Body, Form, FormURLEncoded, File)
+ParamsType = Union[Path, Header, Query, Body, Form, FormURLEncoded, File]
+_FormClasses = (Form, FormURLEncoded, File)
+FormType = Union[Form, FormURLEncoded, File]
 
 class ParamSignature():
     def __init__(
@@ -20,3 +23,7 @@ class ParamSignature():
     
     def __repr__(self) -> str:
         return f"ParamSignature(name={self._name}, type={self._type}, default={self._default}, param_object={self.param_object})"
+    
+    @property
+    def field(self):
+        return self.param_object

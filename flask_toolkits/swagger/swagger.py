@@ -1,15 +1,17 @@
-from collections import defaultdict
 import json
-import os, enum
+import os
+import enum
 import time
+from collections import defaultdict
 from typing import Any, Callable, Dict, Mapping, List, Tuple, Union, Optional
 from flask import Blueprint, Flask, jsonify
 from flask.scaffold import _sentinel
 from pydantic import BaseModel, create_model
 
 from .flask_swagger_ui import get_swaggerui_blueprint
-from ..params import ParamsType, Header, Path, Query, Body
+from ..params import ParamsType, FormType, ParamSignature, Header, Path, Query, Body, Form, FormURLEncoded, File
 from ..routing import APIRouter, EndpointDefinition
+from ..security import HTTPSecurityBase, HTTPScheme
 
 
 class SwaggerGenerator(Blueprint):
@@ -61,8 +63,6 @@ class SwaggerGenerator(Blueprint):
         @self.get(documentation_url)
         def get_openapi_json():
             openapi = self.generate_openapi_json()
-            with open("tesjson","w") as f:
-                json.dump(openapi, f, indent=4)
             return jsonify(openapi)
     
     def create_init_template(
@@ -82,7 +82,8 @@ class SwaggerGenerator(Blueprint):
             "servers": [{"url": s} for s in servers],
             "paths":{},
             "components":{
-                "schemas":{}
+                "schemas":{},
+                "securitySchemes":{}
             },
             "security":[]
         }
@@ -115,7 +116,7 @@ class SwaggerGenerator(Blueprint):
                             self.template["components"]["schemas"].update(param_definition_schema)                        
                         
                         ## define body schema
-                        body_schema = self.generate_request_body_schema(ep.rule.replace("/","-"), ep.paired_params)
+                        body_schema = self.generate_body_json_schema(ep.rule.replace("/","-"), ep.paired_params)
                         if body_schema:
                             if "definitions" in body_schema:
                                 definitions = body_schema.pop("definitions")
@@ -127,28 +128,76 @@ class SwaggerGenerator(Blueprint):
                                     }
                                 }
                             }
+                        
+                        ## define body form, form-urlencoded, file
+                        all_forms = {
+                            "x-www-form-urlencoded": [],
+                            "multipart/form-data": []
+                        }
+                        for content_type, generate_schema in {
+                            "form-data": self.generate_body_form_schema,
+                            "x-www-form-urlencoded": self.generate_body_form_urlencoded_schema,
+                            "multipart/form-data": self.generate_body_file_schema
+                        }.items():
+                            body_schemas = generate_schema(ep.rule.replace("/","-"), ep.paired_params)                        
+                            content_type = "multipart/form-data" if content_type == "form-data" else content_type
+                            all_forms[content_type].extend(body_schemas)
+                        
+                        final_form_schema = {
+                            "x-www-form-urlencoded": {
+                                "schema": {
+                                    "title": ep.rule.replace("/","-")+"__form_urlencoded",
+                                    "type": "object",
+                                    "properties": {},
+                                    "required": []
+                                }
+                            },
+                            "multipart/form-data": {
+                                "schema": {
+                                    "title": ep.rule.replace("/","-")+"__form",
+                                    "type": "object",
+                                    "properties": {},
+                                    "required": []
+                                }
+                            }
+                        }
+                        for k, f in all_forms.items():
+                            if f:
+                                for ff in f:
+                                    final_form_schema[k]["schema"]["properties"].update(ff["properties"])
+                                    final_form_schema[k]["schema"]["required"].extend(ff["required"])
+                            else:
+                                final_form_schema.pop(k)
+                        if "requestBody" not in self.template["paths"][ep.rule][ep.method]:
+                            self.template["paths"][ep.rule][ep.method]["requestBody"] = {"content":{}}
+                        self.template["paths"][ep.rule][ep.method]["requestBody"]["content"].update(final_form_schema)
+
+                        ## define security scheme
+                        if ep.security:
+                            self.template["paths"][ep.rule][ep.method]["security"] = [ep.security.schema]
+                        
         if self.additional_path:
             self.template["paths"].update(self.additional_path)
         if self.additional_components:
             self.template["components"] = self.additional_components
         if self.additional_components_schema:
             self.template["components"]["schemas"] = self.additional_components_schema
+        if HTTPSecurityBase.all_schemes:
+            self.template["components"]["securitySchemes"] = HTTPSecurityBase.all_schemes
         return self.template
     
-    def generate_parameter_sub_schema(self, key, param_object):
+    def generate_parameter_sub_schema(self, key: str, param_object: ParamsType):
         pydantic_model = create_model(
             key,
             **{
-                key: (param_object.dtype, param_object.default)
+                key: (param_object.dtype, param_object)
             }
         )
         schema = pydantic_model.schema(ref_template="#/components/schemas/{model}")
         schema["type"] = self.get_schema_dtype(param_object.dtype)
-        if param_object.description:
-            schema["description"] = param_object.description
         return schema
 
-    def generate_parameter_schema(self, paired_params: Dict[str, ParamsType]):
+    def generate_parameter_schema(self, paired_params: Dict[str, ParamSignature]):
         schemas = []
         definitions = {}
         for k, p in paired_params.items():
@@ -162,6 +211,10 @@ class SwaggerGenerator(Blueprint):
                 }
                 if po.description:
                     schema["description"] = po.description
+                if po.example:
+                    schema["example"] = po.example
+                if po.default.__class__ not in [None.__class__, Ellipsis.__class__]:
+                    schema["default"] = po.default
                 if "definitions" in sub_schema:
                     definitions.update(sub_schema.pop("definitions"))
                     allof = sub_schema.pop("properties")[k]
@@ -171,7 +224,7 @@ class SwaggerGenerator(Blueprint):
                 schemas.append(schema)
         return schemas, definitions
     
-    def generate_request_body_schema(self, name, paired_params):
+    def generate_body_json_schema(self, name, paired_params):
         preschema = {}      
         lk = ""
         for k, p in paired_params.items():
@@ -191,6 +244,43 @@ class SwaggerGenerator(Blueprint):
             else:
                 ss = create_model(name, **preschema)
             return ss.schema(ref_template="#/components/schemas/{model}")
+
+    def _generate_form_schema(
+            self,
+            name: str,
+            paired_params: Dict[str, ParamSignature],
+            params_type: FormType,
+            force_type: Optional[Any] = None,
+        ):
+        all_forms = []
+        for i, (k, p) in enumerate(paired_params.items()):
+            if type(p.param_object) == params_type:
+                ptype = force_type if force_type else p._type
+                ss = create_model(
+                    name+"_"+p.param_object._type.value+f"-{i}",
+                    **{k: (ptype, p.param_object)}
+                )
+                all_forms.append(
+                    ss.schema(ref_template="#/components/schemas/{model}")
+                )
+        return all_forms
+    
+    def generate_body_form_schema(self, name, paired_params):
+        return self._generate_form_schema(name, paired_params, Form)
+
+    def generate_body_form_urlencoded_schema(self, name, paired_params):
+        return self._generate_form_schema(name, paired_params, FormURLEncoded)
+
+    def generate_body_file_schema(self, name, paired_params):
+        body_form = self._generate_form_schema(name, paired_params, File, str)
+        for b in body_form:
+            b["properties"][
+                list(b["properties"].keys())[0]
+            ]["format"] = "binary"
+        return body_form
+
+    def unite_form_schema(self, name, all_forms):
+        1
     
     def get_schema_dtype(self, dtype):
         schema_data_type = {

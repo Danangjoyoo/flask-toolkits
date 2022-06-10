@@ -1,15 +1,18 @@
 from typing import Optional, Dict, Any
 import enum
-from pydantic import BaseModel
-from pydantic.fields import Undefined
+from pydantic import BaseModel, Field
+from pydantic.fields import FieldInfo
 
 class _request_param_type(enum.Enum):
     path = "path"
     header = "header"
     query = "query"
     body = "body"
+    form = "form"
+    form_url_encoded = "x-www-form-urlencoded"
+    file = "file"
 
-class BaseParams():
+class BaseParams(FieldInfo):
     """Define parameter implicitly as a Header, Path, Query, Body
 
     :param default: default value of header
@@ -41,32 +44,41 @@ class BaseParams():
         min_length: Optional[int] = None,
         max_length: Optional[int] = None,
         regex: Optional[str] = None,
-        example: Any = Undefined,
+        example: Any = None,
         examples: Optional[Dict[str, Any]] = None,
         deprecated: Optional[bool] = None,
         _type: _request_param_type = ...,
         **extra: Any,
     ) -> None:
         self.default = default
-        self.alias = alias
         self.title = title
         self.description = description
-        self.gt = gt
-        self.ge = ge
-        self.lt = lt
-        self.le = le
-        self.min_length = min_length
-        self.max_length = max_length
-        self.regex = regex
         self.example = example
         self.examples = examples
         self.deprecated = deprecated
         self.extra = extra
         self.dtype = type(default)
         self._type = _type
+        super().__init__(
+            default,
+            alias=alias,
+            title=title,
+            description=description,
+            gt=gt,
+            ge=ge,
+            lt=lt,
+            le=le,            
+            min_length=min_length,
+            max_length=max_length,
+            regex=regex,
+            repr=repr,
+            example=example,
+            **extra
+        )
+        self._validate()        
     
     def __repr__(self) -> str:
-        return str(self.default)
+        return f"<{self._type.value.upper()} : {self.default}>"
 
 class Header(BaseParams):
     def __init__(
@@ -83,7 +95,7 @@ class Header(BaseParams):
         min_length: Optional[int] = None,
         max_length: Optional[int] = None,
         regex: Optional[str] = None,
-        example: Any = Undefined,
+        example: Any = None,
         examples: Optional[Dict[str, Any]] = None,
         deprecated: Optional[bool] = None,
         **extra: Any
@@ -122,7 +134,7 @@ class Query(BaseParams):
         min_length: Optional[int] = None,
         max_length: Optional[int] = None,
         regex: Optional[str] = None,
-        example: Any = Undefined,
+        example: Any = None,
         examples: Optional[Dict[str, Any]] = None,
         deprecated: Optional[bool] = None,
         **extra: Any
@@ -161,7 +173,7 @@ class Path(BaseParams):
         min_length: Optional[int] = None,
         max_length: Optional[int] = None,
         regex: Optional[str] = None,
-        example: Any = Undefined,
+        example: Any = None,
         examples: Optional[Dict[str, Any]] = None,
         deprecated: Optional[bool] = None,
         **extra: Any
@@ -200,7 +212,7 @@ class Body(BaseParams):
         min_length: Optional[int] = None,
         max_length: Optional[int] = None,
         regex: Optional[str] = None,
-        example: Any = Undefined,
+        example: Any = None,
         examples: Optional[Dict[str, Any]] = None,
         deprecated: Optional[bool] = None,
         pydantic_model: BaseModel = None,
@@ -225,3 +237,120 @@ class Body(BaseParams):
             **extra
         )
         self.pydantic_model = pydantic_model
+
+class Form(BaseParams):
+    def __init__(
+        self,
+        default: Any,
+        *,
+        alias: Optional[str] = None,
+        title: Optional[str] = None,
+        description: Optional[str] = None,
+        gt: Optional[float] = None,
+        ge: Optional[float] = None,
+        lt: Optional[float] = None,
+        le: Optional[float] = None,
+        min_length: Optional[int] = None,
+        max_length: Optional[int] = None,
+        regex: Optional[str] = None,
+        example: Any = None,
+        examples: Optional[Dict[str, Any]] = None,
+        deprecated: Optional[bool] = None,
+        **extra: Any
+    ) -> None:
+        super().__init__(
+            default=default,
+            alias=alias,
+            title=title,
+            description=description,
+            gt=gt,
+            ge=ge,
+            lt=lt,
+            le=le,
+            min_length=min_length,
+            max_length=max_length,
+            regex=regex,
+            example=example,
+            examples=examples,
+            deprecated=deprecated,
+            _type = _request_param_type.form,
+            **extra
+        )
+
+class FormURLEncoded(BaseParams):
+    def __init__(
+        self,
+        default: Any,
+        *,
+        alias: Optional[str] = None,
+        title: Optional[str] = None,
+        description: Optional[str] = None,
+        gt: Optional[float] = None,
+        ge: Optional[float] = None,
+        lt: Optional[float] = None,
+        le: Optional[float] = None,
+        min_length: Optional[int] = None,
+        max_length: Optional[int] = None,
+        regex: Optional[str] = None,
+        example: Any = None,
+        examples: Optional[Dict[str, Any]] = None,
+        deprecated: Optional[bool] = None,
+        **extra: Any
+    ) -> None:
+        super().__init__(
+            default=default,
+            alias=alias,
+            title=title,
+            description=description,
+            gt=gt,
+            ge=ge,
+            lt=lt,
+            le=le,
+            min_length=min_length,
+            max_length=max_length,
+            regex=regex,
+            example=example,
+            examples=examples,
+            deprecated=deprecated,
+            _type = _request_param_type.form_url_encoded,
+            **extra
+        )
+
+class File(BaseParams):
+    def __init__(
+        self,
+        default: Any,
+        *,
+        alias: Optional[str] = None,
+        title: Optional[str] = None,
+        description: Optional[str] = None,
+        gt: Optional[float] = None,
+        ge: Optional[float] = None,
+        lt: Optional[float] = None,
+        le: Optional[float] = None,
+        min_length: Optional[int] = None,
+        max_length: Optional[int] = None,
+        regex: Optional[str] = None,
+        example: Any = None,
+        examples: Optional[Dict[str, Any]] = None,
+        deprecated: Optional[bool] = None,
+        **extra: Any
+    ) -> None:
+        super().__init__(
+            default=default,
+            alias=alias,
+            title=title,
+            description=description,
+            gt=gt,
+            ge=ge,
+            lt=lt,
+            le=le,
+            min_length=min_length,
+            max_length=max_length,
+            regex=regex,
+            example=example,
+            examples=examples,
+            deprecated=deprecated,
+            _type = _request_param_type.file,
+            **extra
+        )
