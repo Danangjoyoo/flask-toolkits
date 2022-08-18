@@ -50,6 +50,7 @@ class BaseParams(FieldInfo):
         _type: _request_param_type = ...,
         **extra: Any,
     ) -> None:
+        self.__default = default
         self.default = default
         self.title = title
         self.description = description
@@ -59,6 +60,13 @@ class BaseParams(FieldInfo):
         self.extra = extra
         self.dtype = type(default)
         self._type = _type
+        self.__gt = gt
+        self.__ge = ge
+        self.__lt = lt
+        self.__le = le
+        self.__min_length = min_length
+        self.__max_length = max_length
+        self.__regex = regex
         super().__init__(
             default,
             alias=alias,
@@ -79,6 +87,27 @@ class BaseParams(FieldInfo):
     
     def __repr__(self) -> str:
         return f"<{self._type.value.upper()} : {self.default}>"
+    
+    def disable_constraint(self):
+        self.default = None
+        self.gt = None
+        self.ge = None
+        self.lt = None
+        self.le = None
+        self.min_length = None
+        self.max_length = None
+        self.regex = None
+    
+    def enable_constaint(self):
+        self.default = self.__default
+        self.gt = self.__gt
+        self.ge = self.__ge
+        self.lt = self.__lt
+        self.le = self.__le
+        self.min_length = self.__min_length
+        self.max_length = self.__max_length
+        self.regex = self.__regex
+
 
 class Header(BaseParams):
     def __init__(

@@ -37,6 +37,9 @@ Flask toolkits implements and provides several features from `FastAPI` like:
 - v0.4
     - Support `Authorization` header in openapi spec.
     - Added `Authorization` processing function for security and can be used as `login` or `auth`.
+- v0.5
+    - Support `add_url_rule` and `route` for endpoint definition
+    - Support auto swagger for multiple methods in a single endpoints
 
 ## Key Tools inside this `toolkit`
 - Automatic API documentation (`swagger`/`openapi`)
@@ -185,6 +188,17 @@ def home():
     return {"message": "hello"}
 ```
 
+
+## Multiple HTTP Methods in a single endpoint
+`add_url_rule` and `route` method for `Flask`'s App or `Blueprints` object are now supported. This also allows you to have multiple HTTP methods in a single endpoint function
+```
+@app.route("/test-multiple-method", methods=["GET", "POST", "PUT", "DELETE", "PATCH"])
+def go_multi_method(
+    name: str = Body(...)
+):
+    return JSONResponse({"result": name})
+```
+Here you will get `null` if you hit it using `GET` but you'll get the value on you hit with other methods that support `Body`. You won't loose your validation since it only applied for methods that support that kind of params.
 
 ---
 

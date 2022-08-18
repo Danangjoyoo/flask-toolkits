@@ -81,6 +81,7 @@ class SwaggerGenerator(Blueprint):
             },
             "servers": [{"url": s} for s in servers],
             "paths":{},
+            "schemes":["http", "https"],
             "components":{
                 "schemas":{},
                 "securitySchemes":{}
@@ -116,18 +117,19 @@ class SwaggerGenerator(Blueprint):
                             self.template["components"]["schemas"].update(param_definition_schema)                        
                         
                         ## define body schema
-                        body_schema = self.generate_body_json_schema(ep.rule.replace("/","-"), ep.paired_params)
-                        if body_schema:
-                            if "definitions" in body_schema:
-                                definitions = body_schema.pop("definitions")
-                                self.template["components"]["schemas"].update(definitions)
-                            self.template["paths"][ep.rule][ep.method]["requestBody"] = {
-                                "content":{
-                                    "application/json":{
-                                        "schema": body_schema
+                        if ep.method != "get":
+                            body_schema = self.generate_body_json_schema(ep.rule.replace("/","-"), ep.paired_params)
+                            if body_schema:
+                                if "definitions" in body_schema:
+                                    definitions = body_schema.pop("definitions")
+                                    self.template["components"]["schemas"].update(definitions)
+                                self.template["paths"][ep.rule][ep.method]["requestBody"] = {
+                                    "content":{
+                                        "application/json":{
+                                            "schema": body_schema
+                                        }
                                     }
                                 }
-                            }
                         
                         ## define body form, form-urlencoded, file
                         all_forms = {
@@ -161,13 +163,14 @@ class SwaggerGenerator(Blueprint):
                                 }
                             }
                         }
-                        for k, f in all_forms.items():
-                            if f:
-                                for ff in f:
-                                    final_form_schema[k]["schema"]["properties"].update(ff["properties"])
-                                    final_form_schema[k]["schema"]["required"].extend(ff["required"])
+                        for _key, _form in all_forms.items():
+                            if _form:
+                                for _subform in _form:
+                                    final_form_schema[_key]["schema"]["properties"].update(_subform["properties"])
+                                    if "required" in _subform["properties"]:
+                                        final_form_schema[_key]["schema"]["required"].extend(_subform["required"])
                             else:
-                                final_form_schema.pop(k)
+                                final_form_schema.pop(_key)
                         if "requestBody" not in self.template["paths"][ep.rule][ep.method]:
                             self.template["paths"][ep.rule][ep.method]["requestBody"] = {"content":{}}
                         self.template["paths"][ep.rule][ep.method]["requestBody"]["content"].update(final_form_schema)
@@ -237,7 +240,7 @@ class SwaggerGenerator(Blueprint):
                 lk = k
         if preschema:
             if len(preschema) == 1:
-                if BaseModel.__subclasscheck__(preschema[lk][0].__class__):
+                if BaseModel.__subclasscheck__(preschema[lk][0]):
                     ss = preschema[k][0]
                 else:
                     ss = create_model(name, **preschema)
