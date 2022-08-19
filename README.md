@@ -40,6 +40,9 @@ Flask toolkits implements and provides several features from `FastAPI` like:
 - v0.5
     - Support `add_url_rule` and `route` for endpoint definition
     - Support auto swagger for multiple methods in a single endpoints
+- v0.6
+    - Support `alias` on endpoint parameters (path, query, header, etc) to enable
+        non-pythonic terms of parameter names
 
 ## Key Tools inside this `toolkit`
 - Automatic API documentation (`swagger`/`openapi`)
@@ -176,7 +179,9 @@ def home(message: str):
 ```
 Overriding `__call__` method inside the subclass would define your security schema for the routers that are using your security scheme
 
-### Define to all endpoints in a router
+---
+
+## Define to all endpoints in a router
 Just pass it to `APIRouter` and all its endpoint will use that security scheme!
 ```
 router_with_bearer = APIRouter("api", __name__, security=JWTBearer())
@@ -188,6 +193,22 @@ def home():
     return {"message": "hello"}
 ```
 
+---
+
+## Parameter Alias
+In case you have non-pythonic terms with unicode character (-, +, _, =) for your paramter names, you can apply the `alias` into the parameters easily
+```
+@app.get("/test-alias")
+def test_alias(
+    apikey: str = Header(..., alias="x-api-key")
+):
+    return JSONResponse({"apikey": apikey})
+```
+here you will also have your swagger is defined with that `alias`
+![alt text](https://github.com/Danangjoyoo/flask-toolkits/blob/main/docs/alias1.png?raw=true)
+
+
+---
 
 ## Multiple HTTP Methods in a single endpoint
 `add_url_rule` and `route` method for `Flask`'s App or `Blueprints` object are now supported. This also allows you to have multiple HTTP methods in a single endpoint function

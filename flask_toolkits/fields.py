@@ -86,7 +86,7 @@ class BaseParams(FieldInfo):
         self._validate()        
     
     def __repr__(self) -> str:
-        return f"<{self._type.value.upper()} : {self.default}>"
+        return f"<{self._type.value.upper()} ({str(self.dtype)[8:-2]}) : {self.default}>"
     
     def disable_constraint(self):
         self.default = None
@@ -107,9 +107,45 @@ class BaseParams(FieldInfo):
         self.min_length = self.__min_length
         self.max_length = self.__max_length
         self.regex = self.__regex
+    
+    def copy(self):
+        self_attributes = {
+            "alias": self.alias,
+            "title": self.title,
+            "description": self.description,
+            "gt": self.gt,
+            "ge": self.ge,
+            "lt": self.lt,
+            "le": self.le,
+            "min_length": self.min_length,
+            "max_length": self.max_length,
+            "regex": self.regex,
+            "example": self.example,
+            "examples": self.examples,
+            "deprecated": self.deprecated
+        }
+        self_attributes.update(self.extra)
+        return self.__class__(self.__default, **self_attributes)
 
 
 class Header(BaseParams):
+    """Define request parameter implicitly as a Header
+
+    :param default: default value of header
+    :param alias: swagger alias
+    :param title: swagger title
+    :param description: swagger description
+    :param gt: greater than `>`
+    :param ge: greater equals `>=`
+    :param lt: less than `<`
+    :param le: less equals `<=`
+    :param min_length: min characters for `string` type
+    :param max_length: max characters for `string` type
+    :param regex:
+    :param example: swagger request example
+    :param examples:
+    :param deprecated: swagger deprecated status
+    """
     def __init__(
         self,
         default: Any,
@@ -149,6 +185,23 @@ class Header(BaseParams):
         )
 
 class Query(BaseParams):
+    """Define request parameter implicitly as a Query
+
+    :param default: default value of header
+    :param alias: swagger alias
+    :param title: swagger title
+    :param description: swagger description
+    :param gt: greater than `>`
+    :param ge: greater equals `>=`
+    :param lt: less than `<`
+    :param le: less equals `<=`
+    :param min_length: min characters for `string` type
+    :param max_length: max characters for `string` type
+    :param regex:
+    :param example: swagger request example
+    :param examples:
+    :param deprecated: swagger deprecated status
+    """
     def __init__(
         self,
         default: Any,
@@ -188,6 +241,23 @@ class Query(BaseParams):
         )
 
 class Path(BaseParams):
+    """Define request parameter implicitly as a Path
+
+    :param default: default value of header
+    :param alias: swagger alias
+    :param title: swagger title
+    :param description: swagger description
+    :param gt: greater than `>`
+    :param ge: greater equals `>=`
+    :param lt: less than `<`
+    :param le: less equals `<=`
+    :param min_length: min characters for `string` type
+    :param max_length: max characters for `string` type
+    :param regex:
+    :param example: swagger request example
+    :param examples:
+    :param deprecated: swagger deprecated status
+    """
     def __init__(
         self,
         default: Any,
@@ -227,6 +297,24 @@ class Path(BaseParams):
         )
 
 class Body(BaseParams):
+    """Define request parameter implicitly as a Body
+
+    :param default: default value of header
+    :param alias: swagger alias
+    :param title: swagger title
+    :param description: swagger description
+    :param gt: greater than `>`
+    :param ge: greater equals `>=`
+    :param lt: less than `<`
+    :param le: less equals `<=`
+    :param min_length: min characters for `string` type
+    :param max_length: max characters for `string` type
+    :param regex:
+    :param example: swagger request example
+    :param examples:
+    :param deprecated: swagger deprecated status
+    :param pydantic_model: pydantic model that represent the body schema
+    """
     def __init__(
         self,
         default: Any,
@@ -268,6 +356,23 @@ class Body(BaseParams):
         self.pydantic_model = pydantic_model
 
 class Form(BaseParams):
+    """Define request parameter implicitly as a Form
+
+    :param default: default value of header
+    :param alias: swagger alias
+    :param title: swagger title
+    :param description: swagger description
+    :param gt: greater than `>`
+    :param ge: greater equals `>=`
+    :param lt: less than `<`
+    :param le: less equals `<=`
+    :param min_length: min characters for `string` type
+    :param max_length: max characters for `string` type
+    :param regex:
+    :param example: swagger request example
+    :param examples:
+    :param deprecated: swagger deprecated status
+    """
     def __init__(
         self,
         default: Any,
@@ -307,6 +412,23 @@ class Form(BaseParams):
         )
 
 class FormURLEncoded(BaseParams):
+    """Define request parameter implicitly as a Form URL Encoded
+
+    :param default: default value of header
+    :param alias: swagger alias
+    :param title: swagger title
+    :param description: swagger description
+    :param gt: greater than `>`
+    :param ge: greater equals `>=`
+    :param lt: less than `<`
+    :param le: less equals `<=`
+    :param min_length: min characters for `string` type
+    :param max_length: max characters for `string` type
+    :param regex:
+    :param example: swagger request example
+    :param examples:
+    :param deprecated: swagger deprecated status
+    """
     def __init__(
         self,
         default: Any,
@@ -346,6 +468,23 @@ class FormURLEncoded(BaseParams):
         )
 
 class File(BaseParams):
+    """Define request parameter implicitly as a File
+
+    :param default: default value of header
+    :param alias: swagger alias
+    :param title: swagger title
+    :param description: swagger description
+    :param gt: greater than `>`
+    :param ge: greater equals `>=`
+    :param lt: less than `<`
+    :param le: less equals `<=`
+    :param min_length: min characters for `string` type
+    :param max_length: max characters for `string` type
+    :param regex:
+    :param example: swagger request example
+    :param examples:
+    :param deprecated: swagger deprecated status
+    """
     def __init__(
         self,
         default: Any,

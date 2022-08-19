@@ -5,6 +5,7 @@ from .fields import Path, Header, Query, Body, Form, FormURLEncoded, File
 
 _ParamsClasses = (Path, Header, Query, Body, Form, FormURLEncoded, File)
 ParamsType = Union[Path, Header, Query, Body, Form, FormURLEncoded, File]
+_BodyClasses = (Body, Form, FormURLEncoded, File)
 _FormClasses = (Form, FormURLEncoded, File)
 FormType = Union[Form, FormURLEncoded, File]
 

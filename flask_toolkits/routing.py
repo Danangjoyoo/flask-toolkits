@@ -21,6 +21,7 @@ from .security import HTTPSecurityBase
 from .params import (
     _ParamsClasses,
     ParamsType,
+    _BodyClasses,
     _FormClasses,
     FormType,
     ParamSignature,
@@ -75,7 +76,8 @@ class EndpointDefinition():
         auto_swagger: bool = True,
         custom_swagger: Optional[Dict[str, Any]] = None,
         pydantic_model: BaseModel = None,
-        security: Optional[HTTPSecurityBase] = None
+        security: Optional[HTTPSecurityBase] = None,
+        aliases: Optional[Dict[str, Dict[str, str]]] = []
     ) -> None:
         self.rule = rule
         self.method = method.lower()
@@ -88,6 +90,7 @@ class EndpointDefinition():
         self.custom_swagger = custom_swagger
         self.pydantic_model = pydantic_model
         self.security = security
+        self.aliases = aliases
         if responses:
             self.responses = responses
         else:
@@ -161,7 +164,7 @@ class APIRouter(Blueprint):
         swagger automatically using `AutoSwagger`
     """
 
-    _api_routers = {}
+    _api_routers: Dict[str, Any] = {}
 
     def __init__(
         self,
@@ -193,8 +196,9 @@ class APIRouter(Blueprint):
             cli_group=cli_group
         )
         self.paired_signature: Dict[str, Dict[str, ParamsType]] = {}
+        self.aliases: Dict[str, Dict[str, str]] = {}
         APIRouter._api_routers[name] = self
-        self.defined_endpoints = []
+        self.defined_endpoints: List[EndpointDefinition] = []
         self._is_registered = False
         self._enable_auto_swagger = auto_swagger
         self.tags = tags
@@ -494,22 +498,35 @@ class APIRouter(Blueprint):
         
         def decorator(func: Callable) -> Callable:
             paired_params = self._get_func_signature(rule, func)
+            aliases = self.get_params_aliases(paired_params)
             self.paired_signature[self.url_prefix+rule] = paired_params
-            pydantic_model_no_body = self.generate_endpoint_pydantic(func.__name__+"Schema", func, with_body=False)
-            pydantic_model = self.generate_endpoint_pydantic(func.__name__+"Schema", func, with_body=True)
+
+            pydantic_model_no_body = self.generate_endpoint_pydantic(
+                func.__name__+"Schema_no_Body", paired_params, with_body=False
+            )
+            pydantic_model = self.generate_endpoint_pydantic(
+                func.__name__+"Schema", paired_params, with_body=True
+            )
 
             def create_modified_func():
                 @wraps(func)
                 def modified_func(**paths):
                     try:
                         req = security(request) if security else request
-                        valid_kwargs = self.get_kwargs(paths, req, paired_params, pydantic_model)
+                        if req.method == "GET":
+                            valid_kwargs = self.get_kwargs(
+                                paths, req, paired_params, pydantic_model_no_body, aliases
+                            )
+                        else:
+                            valid_kwargs = self.get_kwargs(
+                                paths, req, paired_params, pydantic_model, aliases
+                            )
                         return func(**valid_kwargs)
                     except pydantic.ValidationError as e:
                         return JSONResponse(
                             response=e.errors(),
                             status_code=422
-                            )
+                        )
                     except Exception as e:
                         raise e
                 return modified_func
@@ -538,8 +555,9 @@ class APIRouter(Blueprint):
                     auto_swagger=self._enable_auto_swagger & auto_swagger,
                     custom_swagger=custom_swagger,
                     pydantic_model=pydantic_model,
-                    security=security
-                    )
+                    security=security,
+                    aliases=aliases
+                )
                 self.defined_endpoints.append(defined_ep)
             return func
 
@@ -557,43 +575,17 @@ class APIRouter(Blueprint):
         except:
             return o
         return o
-
-    def check_default_val_signature(self, default_val: ParamsType, with_body: bool = True):
-        if default_val != inspect._empty:
-            return default_val
-        return Query(...)
-
-    def check_each_params_for_create_model(
-        self,
-        annots: Dict[str, str],
-        key: str,
-        default_val: ParamsType,
-        with_body: bool = True
-    ) -> Tuple[object, ParamsType]:
-        default_type = annots[key] if key in annots else str
-        if default_type == FileStorage:
-            default_type = str
-        if not with_body:
-            default_type = Any
-            default_val.disable_constraint()
-        return (default_type, default_val)
-
-    def extract_signature_params(self, func: Callable, with_body: bool = True):
-        """Extract the signature of a function as parameters"""
-        annots = func.__annotations__
-        fsig = inspect.signature(func)
-        default_val = {
-            key: self.check_default_val_signature(value.default, with_body)
-            for key,value in fsig.parameters.items()
-        }
-        res = {
-            key: self.check_each_params_for_create_model(annots, key, default_, with_body)
-            for key, default_ in default_val.items()
-        }
-        return res
     
-    def generate_endpoint_pydantic(self, name: str, func: Callable, with_body: bool = True):
-        return create_model(name, __base__=BaseSchema, **self.extract_signature_params(func, with_body))
+    def generate_endpoint_pydantic(self, name: str, paired_params: Dict[str, ParamSignature], with_body: bool = True):
+        params = {
+            key: (pp._type, pp.param_object.copy()) 
+            for key, pp in paired_params.items()
+        }
+        if not with_body:
+            for key in params:
+                if isinstance(params[key][1], _BodyClasses):
+                    params[key][1].disable_constraint()
+        return create_model(name, __base__=BaseSchema, **params)
 
     def _get_func_signature(self, path: str, func: Callable) -> Dict[str, ParamSignature]:
         params_signature = inspect.signature(func).parameters
@@ -709,27 +701,38 @@ class APIRouter(Blueprint):
                     start_path[-1] += c
         return new_rule
 
-    def get_kwargs(self, paths: dict, request: Request, paired_params: Dict[str, ParamSignature], pydantic_model: BaseSchema):
+    def get_kwargs(
+        self,
+        paths: Dict[str, Any],
+        request: Request,
+        paired_params: Dict[str, ParamSignature],
+        pydantic_model: BaseSchema,
+        aliases: Dict[str, str]
+    ):
         """Get keyword args that will be passed to the function
         """
+        # path
         variables = pydantic_model.__fields__.keys()
         kwargs = {**paths}
 
         # query
         queries = request.args.to_dict()
-        query_kwargs = {k: queries[k] for k in variables if k in queries}
+        query_kwargs = {k: queries[k] for k in self.convert_alias_to_name(aliases["query"], variables) if k in queries}
         kwargs.update(query_kwargs)
 
         # header
-        header_kwargs = {k: request.headers.get(k) for k in variables if request.headers.get(k)}
+        header_kwargs = {k: request.headers.get(k) for k in self.convert_alias_to_name(aliases["header"], variables) if request.headers.get(k)}
         kwargs.update(header_kwargs)
 
         # body
         if request.method != "GET":
-            form_kwargs = {k: request.form.get(k) for k in variables if request.form.get(k)}
-            file_kwargs = {k: request.files.get(k) for k in variables if request.files.get(k)}
+            form_kwargs = {k: request.form.get(k) for k in self.convert_alias_to_name(aliases["form"], variables) if request.form.get(k)}
+            file_kwargs = {k: request.files.get(k) for k in self.convert_alias_to_name(aliases["file"], variables) if request.files.get(k)}
             dummy_file_kwargs = {k: "__dummy" for k in file_kwargs}
-            kwargs = {**form_kwargs, **dummy_file_kwargs}
+            kwargs = {
+                **form_kwargs,
+                **dummy_file_kwargs
+            }
 
         empty_keys = pydantic_model.get_non_exist_var_in_kwargs(**kwargs)
         total_body = self.count_required_body(paired_params)
@@ -740,6 +743,8 @@ class APIRouter(Blueprint):
 
                     # JSON body
                     if type(po) == Body:
+                        ak = po.alias or k
+                        kwargs[k] = None
                         if request.method != "GET":
                             b = self.get_pydantic_from_annots(po.dtype)
                             if b:
@@ -747,13 +752,12 @@ class APIRouter(Blueprint):
                                     if total_body == 1:
                                         kwargs[k] = b(**request.json)
                                     else:
-                                        kwargs[k] = b(**request.json[k])
+                                        kwargs[k] = b(**request.json.get(ak, None))
                                 else:
-                                    kwargs[k] = request.json[k]
+                                    kwargs[k] = request.json.get(ak, None)
                             else:
-                                kwargs[k] = request.json[k]
-                        else:
-                            kwargs[k] = None
+                                kwargs[k] = request.json.get(ak, None)
+                            
     
         # mapping the kwargs
         valid_kwargs = pydantic_model(**kwargs)
@@ -766,11 +770,33 @@ class APIRouter(Blueprint):
 
         return valid_kwargs
 
-    # NOT APPLIED YET
-    def check_aliased_kwargs(self, paired_params):
-        aliased_kwargs = ...
-        for key, param in paired_params.items():
-            pass
+    def get_params_aliases(self, paired_params: Dict[str, ParamSignature]) -> Dict[str, Dict[str, str]]:
+        aliases = {
+            "path": {},
+            "header": {},
+            "query": {},
+            "body": {},
+            "form": {},
+            "file" :{}
+        }
+        for key, pp in paired_params.items():
+            if isinstance(pp.param_object, Path):
+                aliases["path"][key] = pp.param_object.alias or key
+            elif isinstance(pp.param_object, Header):
+                aliases["header"][key] = pp.param_object.alias or key
+            elif isinstance(pp.param_object, Query):
+                aliases["query"][key] = pp.param_object.alias or key
+            elif isinstance(pp.param_object, Body):
+                aliases["body"][key] = pp.param_object.alias or key
+            elif isinstance(pp.param_object, (Form, FormURLEncoded)):
+                aliases["form"][key] = pp.param_object.alias or key
+            elif isinstance(pp.param_object, File):
+                aliases["file"][key] = pp.param_object.alias or key
+        return aliases
+    
+    def convert_alias_to_name(self, aliases: Dict[str, str], input_name: List[str]):
+        converted_name = [aliases[key] for key in input_name if key in aliases]
+        return converted_name
 
     def count_required_body(self, paired_params: Dict[str, Any]) -> int:
         total = 0

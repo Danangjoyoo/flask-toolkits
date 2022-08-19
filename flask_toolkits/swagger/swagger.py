@@ -205,6 +205,7 @@ class SwaggerGenerator(Blueprint):
         definitions = {}
         for k, p in paired_params.items():
             po = p.param_object
+            k = p.param_object.alias or k
             if type(po) in [Header, Path, Query]:
                 sub_schema = self.generate_parameter_sub_schema(k, po)
                 schema = {
@@ -227,11 +228,12 @@ class SwaggerGenerator(Blueprint):
                 schemas.append(schema)
         return schemas, definitions
     
-    def generate_body_json_schema(self, name, paired_params):
+    def generate_body_json_schema(self, name: str, paired_params: Dict[str, ParamSignature]):
         preschema = {}      
         lk = ""
         for k, p in paired_params.items():
             po = p.param_object
+            k = p.param_object.alias or k
             if type(po) == Body:
                 if po.pydantic_model:
                     preschema[k] = (po.pydantic_model, ...)
@@ -257,6 +259,7 @@ class SwaggerGenerator(Blueprint):
         ):
         all_forms = []
         for i, (k, p) in enumerate(paired_params.items()):
+            k = p.param_object.alias or k
             if type(p.param_object) == params_type:
                 ptype = force_type if force_type else p._type
                 ss = create_model(
