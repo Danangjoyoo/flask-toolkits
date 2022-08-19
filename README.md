@@ -87,9 +87,9 @@ router = APIRouter("email", import_name=__name__, static_folder="/routers/email"
 
 @router.post("/read", tags=["Email Router])
 def get_email(
-    id: int = Body(...),
-    name: Optional[str] = Body(...),
-    token: int = Header(...),
+    id: int = Body(),
+    name: Optional[str] = Body(None),
+    token: int = Header(),
     race: Optional[str] = Query(None)
 ):
     return JSONResponse({"id":id, "name": name})
@@ -200,7 +200,7 @@ In case you have non-pythonic terms with unicode character (-, +, _, =) for your
 ```
 @app.get("/test-alias")
 def test_alias(
-    apikey: str = Header(..., alias="x-api-key")
+    apikey: str = Header(alias="x-api-key")
 ):
     return JSONResponse({"apikey": apikey})
 ```
@@ -215,7 +215,7 @@ here you will also have your swagger is defined with that `alias`
 ```
 @app.route("/test-multiple-method", methods=["GET", "POST", "PUT", "DELETE", "PATCH"])
 def go_multi_method(
-    name: str = Body(...)
+    name: str = Body()
 ):
     return JSONResponse({"result": name})
 ```

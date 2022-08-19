@@ -32,7 +32,7 @@ class BaseParams(FieldInfo):
     """
     def __init__(
         self,
-        default: Any,
+        default: Any = ...,
         *,
         alias: Optional[str] = None,
         title: Optional[str] = None,
@@ -148,7 +148,7 @@ class Header(BaseParams):
     """
     def __init__(
         self,
-        default: Any,
+        default: Any = ...,
         *,
         alias: Optional[str] = None,
         title: Optional[str] = None,
@@ -184,6 +184,7 @@ class Header(BaseParams):
             **extra
         )
 
+
 class Query(BaseParams):
     """Define request parameter implicitly as a Query
 
@@ -204,7 +205,7 @@ class Query(BaseParams):
     """
     def __init__(
         self,
-        default: Any,
+        default: Any = ...,
         *,
         alias: Optional[str] = None,
         title: Optional[str] = None,
@@ -240,6 +241,7 @@ class Query(BaseParams):
             **extra
         )
 
+
 class Path(BaseParams):
     """Define request parameter implicitly as a Path
 
@@ -260,7 +262,7 @@ class Path(BaseParams):
     """
     def __init__(
         self,
-        default: Any,
+        default: Any = ...,
         *,
         alias: Optional[str] = None,
         title: Optional[str] = None,
@@ -296,6 +298,7 @@ class Path(BaseParams):
             **extra
         )
 
+
 class Body(BaseParams):
     """Define request parameter implicitly as a Body
 
@@ -317,7 +320,7 @@ class Body(BaseParams):
     """
     def __init__(
         self,
-        default: Any,
+        default: Any = ...,
         *,
         alias: Optional[str] = None,
         title: Optional[str] = None,
@@ -355,6 +358,7 @@ class Body(BaseParams):
         )
         self.pydantic_model = pydantic_model
 
+
 class Form(BaseParams):
     """Define request parameter implicitly as a Form
 
@@ -375,7 +379,7 @@ class Form(BaseParams):
     """
     def __init__(
         self,
-        default: Any,
+        default: Any = ...,
         *,
         alias: Optional[str] = None,
         title: Optional[str] = None,
@@ -411,6 +415,7 @@ class Form(BaseParams):
             **extra
         )
 
+
 class FormURLEncoded(BaseParams):
     """Define request parameter implicitly as a Form URL Encoded
 
@@ -431,7 +436,7 @@ class FormURLEncoded(BaseParams):
     """
     def __init__(
         self,
-        default: Any,
+        default: Any = ...,
         *,
         alias: Optional[str] = None,
         title: Optional[str] = None,
@@ -467,6 +472,7 @@ class FormURLEncoded(BaseParams):
             **extra
         )
 
+
 class File(BaseParams):
     """Define request parameter implicitly as a File
 
@@ -487,7 +493,7 @@ class File(BaseParams):
     """
     def __init__(
         self,
-        default: Any,
+        default: Any = ...,
         *,
         alias: Optional[str] = None,
         title: Optional[str] = None,
