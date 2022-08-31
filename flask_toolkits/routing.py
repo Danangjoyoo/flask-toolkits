@@ -680,7 +680,7 @@ class APIRouter(Blueprint):
         return new_rule
     
     def validate_rule(self, rule: str):
-        pattern = re.compile(r"[<]{1}.*[>]{1}")
+        pattern = re.compile(r"[<]{1}[^<>]*[>]{1}")
         for text in pattern.findall(rule):
             assert text.count(":") in [0,1], f"Multiple type definition using ':' in path -> {rule}"
 
