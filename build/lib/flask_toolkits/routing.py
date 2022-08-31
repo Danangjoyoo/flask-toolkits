@@ -9,7 +9,7 @@ from collections import defaultdict
 from flask import Flask, Blueprint, Response, jsonify, request, Request
 from flask.scaffold import _sentinel
 from functools import wraps
-from typing import Any, Callable, Dict, Mapping, List, Tuple, Union, Optional
+from typing import Any, Callable, Dict, Mapping, List, Tuple, Type, Union, Optional
 from pydantic import BaseModel, create_model
 from werkzeug.datastructures import FileStorage
 
@@ -61,7 +61,7 @@ class EndpointDefinition():
             }
     :param pydantic_model: 
     """
-    _all_endpoints = []
+    _all_endpoints: Type["EndpointDefinition"] = []
 
     def __init__(
         self,
@@ -96,31 +96,31 @@ class EndpointDefinition():
         else:
             self.responses = {
                 "200": {
-                        "description": "Successful Response",
-                        "content": {
-                            "application/json": {
-                                "schema": {}
-                            }
+                    "description": "Successful Response",
+                    "content": {
+                        "application/json": {
+                            "schema": {}
                         }
-                    },
+                    }
+                },
                 "422":{
-                        "description": "ValidationError",
-                        "content": {
-                            "application/json": {
-                                "example": {
-                                    "detail": [
-                                        {
-                                        "loc": [
-                                            "string"
-                                        ],
-                                        "msg": "string",
-                                        "type": "string"
-                                        }
-                                    ]
-                                }
+                    "description": "ValidationError",
+                    "content": {
+                        "application/json": {
+                            "example": {
+                                "detail": [
+                                    {
+                                    "loc": [
+                                        "string"
+                                    ],
+                                    "msg": "string",
+                                    "type": "string"
+                                    }
+                                ]
                             }
                         }
                     }
+                }
             }
         EndpointDefinition._all_endpoints.append(self)
 
@@ -164,7 +164,7 @@ class APIRouter(Blueprint):
         swagger automatically using `AutoSwagger`
     """
 
-    _api_routers: Dict[str, Any] = {}
+    _api_routers: Dict[str, Type["APIRouter"]] = {}
 
     def __init__(
         self,
@@ -459,7 +459,7 @@ class APIRouter(Blueprint):
         **options: t.Any
     ) -> None:
         self.route(
-            rule=self.validate_rule(rule),
+            rule=rule,
             methods=options.pop("methods", ["GET"]),
             endpoint=endpoint,
             provide_automatic_options=provide_automatic_options,
@@ -490,7 +490,9 @@ class APIRouter(Blueprint):
         **options: Any
     ) -> Callable:
 
-        assert rule[0] == "/", f"path rule must starts with '/' -> {rule}"
+        rule = self.validate_rule(rule)
+
+        assert (self.url_prefix+rule)[0] == "/", f"path rule must starts with '/' -> {rule}"
 
         security = self.security if not security else security
         

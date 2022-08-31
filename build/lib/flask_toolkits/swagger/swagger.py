@@ -236,9 +236,15 @@ class SwaggerGenerator(Blueprint):
             k = p.param_object.alias or k
             if type(po) == Body:
                 if po.pydantic_model:
-                    preschema[k] = (po.pydantic_model, ...)
+                    if po.example:
+                        preschema[k] = (po.pydantic_model, po)
+                    else:
+                        preschema[k] = (po.pydantic_model, po.default)
                 else:
-                    preschema[k] = (p._type, ...)
+                    if po.example:
+                        preschema[k] = (p._type, po)
+                    else:
+                        preschema[k] = (p._type, p._default)
                 lk = k
         if preschema:
             if len(preschema) == 1:
