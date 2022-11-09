@@ -427,7 +427,7 @@ class APIRouter(Blueprint):
         if "methods" in options:
             raise TypeError("Use the 'route' decorator to use the 'methods' argument")
         return self.route(
-            rule=self.validate_rule(rule),
+            rule=rule,
             methods=[method],
             tags=tags,
             summary=summary,
@@ -731,10 +731,10 @@ class APIRouter(Blueprint):
             form_kwargs = {k: request.form.get(k) for k in self.convert_alias_to_name(aliases["form"], variables) if request.form.get(k)}
             file_kwargs = {k: request.files.get(k) for k in self.convert_alias_to_name(aliases["file"], variables) if request.files.get(k)}
             dummy_file_kwargs = {k: "__dummy" for k in file_kwargs}
-            kwargs = {
+            kwargs.update({
                 **form_kwargs,
                 **dummy_file_kwargs
-            }
+            })
 
         empty_keys = pydantic_model.get_non_exist_var_in_kwargs(**kwargs)
         total_body = self.count_required_body(paired_params)
