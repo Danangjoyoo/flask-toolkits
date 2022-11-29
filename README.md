@@ -62,7 +62,7 @@ from flask_toolkits.responses import JSONResponse
 router = APIRouter("email", import_name=__name__, static_folder="/routers/email", url_prefix="/email")
 
 
-@router.post("/read", tags=["Email Router])
+@router.post("/read", tags=["Email Router"])
 def get_email(
     id: int,
     name: Optional[str],
@@ -85,7 +85,7 @@ from flask_toolkits.responses import JSONResponse
 router = APIRouter("email", import_name=__name__, static_folder="/routers/email", url_prefix="/email")
 
 
-@router.post("/read", tags=["Email Router])
+@router.post("/read", tags=["Email Router"])
 def get_email(
     id: int = Body(),
     name: Optional[str] = Body(None),
@@ -161,7 +161,7 @@ from flask_toolkits.security import HTTPBearerSecurity
 class JWTBearer(HTTPBearerSecurity):
     def __init__(self):
         super().__init__()
-    
+
     def __call__(self, req):
         data = self.get_authorization_data(req)
         if data != "abcdefghij":
@@ -234,7 +234,7 @@ app = Flask(__name__)
 class MetricsMiddleware(BaseHTTPMiddleware):
     def __init__(self):
         super().__init__()
-    
+
     def dispatch(self, request, call_next):
         t0 = time.time()
         response = call_next(request)
