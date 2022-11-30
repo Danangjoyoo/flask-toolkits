@@ -212,20 +212,22 @@ here you will also have your swagger is defined with that `alias`
 ## Response Structure
 Creating the response example and schema easily by just defining the class and pass it to `create_response_example`
 ```
-from flask_toolkits.schemas import create_response_example
+from flask_toolkits.responses import response_json_example
 
 
 class PersonResponse(BaseSchema):
     name: str
     age: int
 
+class FailedResponse(BaseSchema):
+    message: str
+    error_code: int
 
 @router.route(
     '/hello_world/<first>/<int:number>', tags=["My Hello"],
     responses={
-        200: create_response_example(
-            PersonResponse(name="Alex", age=20)
-        )
+        200: response_json_example(PersonResponse(name="Alex", age=20)),
+        400: response_json_example(FailedResponse(message="Data not found", error_code=101))
     },
 )
 def hello_world(
