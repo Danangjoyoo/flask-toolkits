@@ -41,6 +41,8 @@ Flask toolkits implements and provides several features from `FastAPI` like:
 - v0.6
     - Support `alias` on endpoint parameters (path, query, header, etc) to enable
         non-pythonic terms of parameter names
+- v0.7
+    - support response structure generator function to helps creating the response schema and examples
 
 ## Key Tools inside this `toolkit`
 - Automatic API documentation (`swagger`/`openapi`)
@@ -205,6 +207,40 @@ def test_alias(
 here you will also have your swagger is defined with that `alias`
 ![alt text](https://github.com/Danangjoyoo/flask-toolkits/blob/main/docs/alias1.png?raw=true)
 
+---
+
+## Response Structure
+Creating the response example and schema easily by just defining the class and pass it to `create_response_example`
+```
+from flask_toolkits.schemas import create_response_example
+
+
+class PersonResponse(BaseSchema):
+    name: str
+    age: int
+
+
+@router.route(
+    '/hello_world/<first>/<int:number>', tags=["My Hello"],
+    responses={
+        200: create_response_example(
+            PersonResponse(name="Alex", age=20)
+        )
+    },
+)
+def hello_world(
+    name: str = Query(),
+    age: int = Query()
+):
+    resp = {
+        "name": name,
+        "age": age
+    }
+
+    return JSONResponse(resp)
+```
+![alt text](https://github.com/Danangjoyoo/flask-toolkits/blob/main/docs/response_example1.png?raw=true)
+![alt text](https://github.com/Danangjoyoo/flask-toolkits/blob/main/docs/response_schema1.png?raw=true)
 
 ---
 

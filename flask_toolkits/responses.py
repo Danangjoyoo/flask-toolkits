@@ -1,13 +1,12 @@
 import enum
-from json import JSONEncoder
 import json
-from typing import Any, Callable, Iterable, Mapping, Optional, Tuple, Union
 from pydantic import BaseModel
+from typing import Any, Callable, Iterable, Mapping, Optional, Tuple, Union
 from werkzeug.wrappers.response import Response as ResponseBase
 
-class SwaggerJSONEncoder(JSONEncoder):
+class SwaggerJSONEncoder(json.JSONEncoder):
     def __init__(
-        self, 
+        self,
         *,
         skipkeys: bool = False,
         ensure_ascii: bool = True,
@@ -28,7 +27,7 @@ class SwaggerJSONEncoder(JSONEncoder):
             separators=separators,
             default=default,
         )
-    
+
     def default(self, o: Any) -> Any:
         try:
             if BaseModel.__subclasscheck__(o.__class__):
@@ -37,10 +36,11 @@ class SwaggerJSONEncoder(JSONEncoder):
                 return o.value
         finally:
             try:
-                oo = super().default(o)            
+                oo = super().default(o)
             except:
                 oo = o.__repr__()
         return oo
+
 
 class JSONResponse(ResponseBase):
     def __init__(
