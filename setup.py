@@ -7,7 +7,7 @@ from pathlib import Path
 this_directory = Path(__file__).parent
 long_description = (this_directory / "README.md").read_text()
 
-VERSION = "0.6.11"
+VERSION = "0.6.12"
 DESCRIPTION = "Flask toolkits to boost your development and simplify flask, its featured with AutoSwagger"
 
 # Setting up
@@ -37,5 +37,4 @@ setup(
         "Typing :: Typed"
     ],
     url="https://github.com/Danangjoyoo/flask-toolkits"
-
 )

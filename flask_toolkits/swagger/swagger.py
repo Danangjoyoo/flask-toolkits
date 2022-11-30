@@ -219,16 +219,15 @@ class SwaggerGenerator(Blueprint):
                     schema["required"] = True
                 if po.description:
                     schema["description"] = po.description
-                if po.example:
-                    schema["example"] = po.example
-                if po.default.__class__ not in [None.__class__, Ellipsis.__class__]:
-                    schema["default"] = po.default
                 if "definitions" in sub_schema:
                     definitions.update(sub_schema.pop("definitions"))
                     allof = sub_schema.pop("properties")[k]
                     schema["schema"] = {"allOf": [allof]}
                 else:
-                    schema["schema"] = sub_schema
+                    schema["schema"] = sub_schema.pop("properties")[k]
+                if po.example or schema["schema"].get("default"):
+                    schema["example"] = po.example or schema["schema"].get("default")
+
                 schemas.append(schema)
         return schemas, definitions
 
