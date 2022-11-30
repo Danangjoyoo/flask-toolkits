@@ -221,6 +221,8 @@ class SwaggerGenerator(Blueprint):
                     schema["description"] = po.description
                 if po.example:
                     schema["example"] = po.example
+                if po.default.__class__ not in [None.__class__, Ellipsis.__class__]:
+                    schema["default"] = po.default
                 if "definitions" in sub_schema:
                     definitions.update(sub_schema.pop("definitions"))
                     allof = sub_schema.pop("properties")[k]
