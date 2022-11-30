@@ -1,6 +1,6 @@
 from pydantic import BaseModel, create_model
-from pydantic.main import ModelMetaclass
-from typing import Any, Union, Dict
+from typing import Any, Dict, Optional, Union
+
 
 class BaseSchema(BaseModel):
     def __init__(__pydantic_self__, **data: Any) -> None:
@@ -30,4 +30,38 @@ class BaseSchema(BaseModel):
             newDatas[key] = data
         return newDatas
 
+    def as_response(self):
+        """
+        convert schema to be a response example and schema
+        """
+        return response_json_example(self)
+
 json_model = create_model
+
+
+def response_json_example(
+    schema_object: Optional[Union[Dict[str, Any], BaseSchema, BaseModel, BaseModel.__class__]] = {},
+    example_object: Optional[Union[Dict[str, Any], BaseSchema, BaseModel]] = {},
+):
+    if isinstance(schema_object, (BaseModel.__class__, BaseModel, BaseSchema)):
+        schema_dict = schema_object.schema()
+    else:
+        schema_dict = schema_object
+
+    if not example_object:
+        example_object = schema_object
+
+    if isinstance(example_object, (BaseModel, BaseSchema)):
+        example_dict = example_object.dict()
+    else:
+        example_dict = example_object
+
+    response_structure = {"content": {"application/json": {}}}
+
+    if schema_dict:
+        response_structure["content"]["application/json"]["schema"] = schema_dict
+
+    if example_dict:
+        response_structure["content"]["application/json"]["example"] = example_dict
+
+    return response_structure

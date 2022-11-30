@@ -210,7 +210,7 @@ here you will also have your swagger is defined with that `alias`
 ---
 
 ## Response Structure
-Creating the response example and schema easily by just defining the class and pass it to `create_response_example`
+Creating the response example and schema easily by just defining the class and pass it to `create_response_example` or accessing `as_response()` from `BaseSchema` objects
 ```
 from flask_toolkits.responses import response_json_example
 
@@ -227,7 +227,7 @@ class FailedResponse(BaseSchema):
     '/hello_world/<first>/<int:number>', tags=["My Hello"],
     responses={
         200: response_json_example(PersonResponse(name="Alex", age=20)),
-        400: response_json_example(FailedResponse(message="Data not found", error_code=101))
+        400: FailedResponse(message="Data not found", error_code=101).as_response()
     },
 )
 def hello_world(
