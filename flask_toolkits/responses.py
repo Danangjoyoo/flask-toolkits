@@ -1,3 +1,4 @@
+import datetime
 import enum
 import json
 from pydantic import BaseModel
@@ -36,6 +37,10 @@ class SwaggerJSONEncoder(json.JSONEncoder):
                 return o.dict()
             if enum.Enum.__subclasscheck__(o.__class__):
                 return o.value
+            if datetime.datetime.__subclasscheck__(o.__class__):
+                return o.isoformat()
+            if datetime.date.__subclasscheck__(o.__class__):
+                return o.isoformat()
         finally:
             try:
                 oo = super().default(o)
