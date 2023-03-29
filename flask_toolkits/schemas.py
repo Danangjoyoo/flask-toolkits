@@ -42,6 +42,7 @@ json_model = create_model
 def response_json_example(
     schema_object: Optional[Union[Dict[str, Any], BaseSchema, BaseModel, BaseModel.__class__]] = {},
     example_object: Optional[Union[Dict[str, Any], BaseSchema, BaseModel]] = {},
+    description: str = ""
 ):
     if isinstance(schema_object, (BaseModel.__class__, BaseModel, BaseSchema)):
         schema_dict = schema_object.schema()
@@ -56,7 +57,10 @@ def response_json_example(
     else:
         example_dict = example_object
 
-    response_structure = {"content": {"application/json": {}}}
+    response_structure = {
+        "content": {"application/json": {}},
+        "description": description
+    }
 
     if schema_dict:
         response_structure["content"]["application/json"]["schema"] = schema_dict
