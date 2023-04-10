@@ -165,6 +165,10 @@ class SwaggerGenerator(Blueprint):
                         for _key, _form in all_forms.items():
                             if _form:
                                 for _subform in _form:
+                                    if _subform.get("definitions"):
+                                        self.template["components"]["schemas"].update(
+                                            _subform.get("definitions")
+                                        )
                                     final_form_schema[_key]["schema"]["properties"].update(_subform["properties"])
                                     if "required" in _subform["properties"]:
                                         if "required" not in final_form_schema[_key]["schema"]:
@@ -209,7 +213,7 @@ class SwaggerGenerator(Blueprint):
         for k, p in paired_params.items():
             po = p.param_object
             k = p.param_object.alias or k
-            if type(po) in [Form, Header, Path, Query]:
+            if type(po) in [Header, Path, Query]:
                 sub_schema = self.generate_parameter_sub_schema(k, po)
                 schema = {
                     "name": k,

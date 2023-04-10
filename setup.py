@@ -7,7 +7,7 @@ from pathlib import Path
 this_directory = Path(__file__).parent
 long_description = (this_directory / "README.md").read_text()
 
-VERSION = "0.7.9"
+VERSION = "0.7.10"
 DESCRIPTION = "Flask toolkits to boost your development and simplify flask, its featured with AutoSwagger"
 
 # Setting up
