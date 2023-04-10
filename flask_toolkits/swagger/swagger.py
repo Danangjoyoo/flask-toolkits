@@ -209,7 +209,7 @@ class SwaggerGenerator(Blueprint):
         for k, p in paired_params.items():
             po = p.param_object
             k = p.param_object.alias or k
-            if type(po) in [Header, Path, Query]:
+            if type(po) in [Form, Header, Path, Query]:
                 sub_schema = self.generate_parameter_sub_schema(k, po)
                 schema = {
                     "name": k,
